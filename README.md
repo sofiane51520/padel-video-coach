@@ -13,11 +13,21 @@ Squelette Expo pour une application cross-platform web, iOS et Android qui analy
   - `Point gagnant` : le joueur termine l'echange par un coup que l'adversaire ne remet pas.
 - Rapport par joueur : distance parcourue, fautes, points gagnants.
 
+## Flux actuel
+
+- L'import video cree un vrai match dans le store applicatif.
+- Le match nouvellement cree devient le match actif.
+- La calibration permet de placer les quatre coins du terrain.
+- Les noms des joueurs sont modifiables.
+- La revue enregistre les fautes et points gagnants sur le match actif.
+- Le rapport recalcule les fautes et points gagnants depuis les tags.
+
 ## Stack
 
 - Expo SDK 55
 - React Native + Expo Router
 - TypeScript
+- Tamagui
 - Web via React Native Web
 - Backend prevu : Python FastAPI + OpenCV + YOLO
 
@@ -26,18 +36,18 @@ Squelette Expo pour une application cross-platform web, iOS et Android qui analy
 Installe les dependances puis lance Expo :
 
 ```bash
-npm install
-npm run web
+corepack pnpm install
+corepack pnpm web
 ```
 
 Tu peux aussi lancer l'app mobile avec :
 
 ```bash
-npm run android
-npm run ios
+corepack pnpm android
+corepack pnpm ios
 ```
 
-Note locale : sur cette machine, `node` est disponible mais `npm` pointe actuellement vers une installation utilisateur incomplete. Si `npm install` echoue, reinstalle Node.js LTS ou repare npm avant de lancer Expo.
+Note locale : sur cette machine, `node` est disponible mais `npm` pointe actuellement vers une installation utilisateur incomplete. Utilise `corepack pnpm`.
 
 ## Structure
 
@@ -57,5 +67,7 @@ src/app
 src/components
 src/constants
 src/data
+src/store
 src/types
+src/utils
 ```

@@ -4,6 +4,7 @@ import { ComponentProps } from "react";
 import { Text, XStack, YStack } from "tamagui";
 import { Badge } from "@/components/Badge";
 import { colors } from "@/constants/theme";
+import { useMatchStore } from "@/store/matchStore";
 import { Match } from "@/types/match";
 import { statusLabel } from "@/utils/format";
 
@@ -12,10 +13,15 @@ type MatchCardProps = {
 };
 
 export function MatchCard({ match }: MatchCardProps) {
+  const { selectMatch } = useMatchStore();
+
   return (
     <YStack
       gap="$4"
-      onPress={() => router.push({ pathname: "/matches/[id]", params: { id: match.id } })}
+      onPress={() => {
+        selectMatch(match.id);
+        router.push({ pathname: "/matches/[id]", params: { id: match.id } });
+      }}
       pressStyle={{ scale: 0.99, opacity: 0.82 }}
       hoverStyle={{ opacity: 0.94 }}
       style={{

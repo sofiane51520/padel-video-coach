@@ -6,9 +6,11 @@ import { PageHeader } from "@/components/PageHeader";
 import { Screen } from "@/components/Screen";
 import { StepList } from "@/components/StepList";
 import { colors } from "@/constants/theme";
-import { matches } from "@/data/mockMatches";
+import { useMatchStore } from "@/store/matchStore";
 
 export default function MatchesScreen() {
+  const { matches } = useMatchStore();
+
   return (
     <Screen>
       <PageHeader

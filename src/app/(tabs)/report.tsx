@@ -3,11 +3,22 @@ import { PageHeader } from "@/components/PageHeader";
 import { Screen } from "@/components/Screen";
 import { StatTile } from "@/components/StatTile";
 import { colors } from "@/constants/theme";
-import { matches, getPlayer } from "@/data/mockMatches";
+import { useMatchStore } from "@/store/matchStore";
 import { formatDistance } from "@/utils/format";
+import { computePlayerStats, getPlayer } from "@/utils/stats";
 
 export default function ReportScreen() {
-  const match = matches[0];
+  const { activeMatch: match } = useMatchStore();
+
+  if (!match) {
+    return (
+      <Screen>
+        <PageHeader title="Aucun rapport" description="Importe une video pour generer des statistiques." />
+      </Screen>
+    );
+  }
+
+  const stats = computePlayerStats(match);
 
   return (
     <Screen>
@@ -17,7 +28,7 @@ export default function ReportScreen() {
         description="Distance parcourue, fautes directes et points gagnants."
       />
 
-      {match.stats.map((stat) => {
+      {stats.map((stat) => {
         const player = getPlayer(match, stat.playerId);
 
         return (

@@ -1,4 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
+import { useEffect } from "react";
 import { Text, XStack, YStack } from "tamagui";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
@@ -7,16 +8,39 @@ import { PageHeader } from "@/components/PageHeader";
 import { Screen } from "@/components/Screen";
 import { StepList } from "@/components/StepList";
 import { colors } from "@/constants/theme";
-import { getMatch } from "@/data/mockMatches";
+import { useMatchStore } from "@/store/matchStore";
 import { statusLabel } from "@/utils/format";
+import { getTaggedRallyCount } from "@/utils/stats";
 
 export default function MatchDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const match = getMatch(id ?? "match-demo");
+  const { getMatch, selectMatch } = useMatchStore();
+  const match = getMatch(id);
+
+  useEffect(() => {
+    if (match) {
+      selectMatch(match.id);
+    }
+  }, [match, selectMatch]);
+
+  if (!match) {
+    return (
+      <Screen>
+        <PageHeader title="Match introuvable" description="Retourne a la liste des matchs." />
+      </Screen>
+    );
+  }
+
+  const calibrationDone = (match.calibrationPoints?.length ?? 0) >= 4;
+  const taggedRallies = getTaggedRallyCount(match);
 
   return (
     <Screen>
-      <PageHeader eyebrow={match.venue} title={match.title} description={`Duree ${match.duration}`} />
+      <PageHeader
+        eyebrow={match.venue}
+        title={match.title}
+        description={`Duree ${match.duration} - ${match.rallies.length} echanges prepares`}
+      />
 
       <YStack
         gap="$4"
@@ -62,22 +86,22 @@ export default function MatchDetailScreen() {
           {
             title: "Video importee",
             description: "La video est associee au match et prete pour le traitement.",
-            done: true
+            done: Boolean(match.video)
           },
           {
             title: "Terrain calibre",
             description: "Les coins servent a transformer les positions en metres.",
-            done: true
+            done: calibrationDone
           },
           {
             title: "Joueurs assignes",
             description: "Chaque track IA est rattache a un joueur lisible.",
-            done: true
+            done: match.players.every((player) => player.label.trim().length > 0)
           },
           {
             title: "Echanges a taguer",
-            description: "Les fins d'echange sont revues en faute ou point gagnant.",
-            done: false
+            description: `${taggedRallies}/${match.rallies.length} fins d'echange taguees.`,
+            done: taggedRallies === match.rallies.length
           }
         ]}
       />

@@ -1,20 +1,37 @@
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { StyleSheet, TextInput } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 import { Button } from "@/components/Button";
 import { PageHeader } from "@/components/PageHeader";
 import { Screen } from "@/components/Screen";
 import { colors } from "@/constants/theme";
-import { getMatch } from "@/data/mockMatches";
+import { useMatchStore } from "@/store/matchStore";
 
 export default function PlayersScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const match = getMatch(id ?? "match-demo");
+  const { getMatch, selectMatch, setMatchStatus, updatePlayerLabel } = useMatchStore();
+  const match = getMatch(id);
+
+  if (!match) {
+    return (
+      <Screen>
+        <PageHeader title="Match introuvable" description="Retourne a la liste des matchs." />
+      </Screen>
+    );
+  }
+
+  const currentMatch = match;
+
+  function handleStartAnalysis() {
+    selectMatch(currentMatch.id);
+    setMatchStatus(currentMatch.id, "analysis");
+    router.push({ pathname: "/analysis/[id]", params: { id: currentMatch.id } });
+  }
 
   return (
     <Screen>
       <PageHeader
-        eyebrow={match.title}
+        eyebrow={currentMatch.title}
         title="Identification des joueurs"
         description="Associe chaque piste detectee a un joueur et a son equipe."
       />
@@ -29,7 +46,7 @@ export default function PlayersScreen() {
           padding: 18
         }}
       >
-        {match.players.map((player) => (
+        {currentMatch.players.map((player) => (
           <XStack key={player.id} gap="$3" style={{ alignItems: "center" }}>
             <YStack style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: player.color }} />
             <YStack flex={1} gap="$1">
@@ -37,7 +54,8 @@ export default function PlayersScreen() {
                 Track {player.id.toUpperCase()}
               </Text>
               <TextInput
-                defaultValue={player.label}
+                value={player.label}
+                onChangeText={(label) => updatePlayerLabel(currentMatch.id, player.id, label)}
                 placeholder="Nom du joueur"
                 placeholderTextColor={colors.inkMuted}
                 style={styles.input}
@@ -52,14 +70,11 @@ export default function PlayersScreen() {
       </YStack>
 
       <XStack flexWrap="wrap" gap="$3">
-        <Button
-          href={{ pathname: "/analysis/[id]", params: { id: match.id } }}
-          icon="play-circle-outline"
-        >
+        <Button icon="play-circle-outline" onPress={handleStartAnalysis}>
           Lancer analyse
         </Button>
         <Button
-          href={{ pathname: "/calibration/[id]", params: { id: match.id } }}
+          href={{ pathname: "/calibration/[id]", params: { id: currentMatch.id } }}
           icon="arrow-back-outline"
           variant="secondary"
         >

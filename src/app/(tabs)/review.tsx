@@ -1,39 +1,28 @@
-import { useMemo, useState } from "react";
 import { Text, XStack } from "tamagui";
 import { PageHeader } from "@/components/PageHeader";
 import { RallyDecisionCard } from "@/components/RallyDecisionCard";
 import { Screen } from "@/components/Screen";
 import { colors } from "@/constants/theme";
-import { matches } from "@/data/mockMatches";
-import { RallyDecision, RallyLabel } from "@/types/match";
+import { useMatchStore } from "@/store/matchStore";
+import { RallyLabel } from "@/types/match";
+import { getTaggedRallyCount } from "@/utils/stats";
 
 export default function ReviewScreen() {
-  const match = matches[0];
-  const [decisions, setDecisions] = useState<Record<string, RallyDecision>>(() => {
-    return match.rallies.reduce<Record<string, RallyDecision>>((acc, rally) => {
-      if (rally.decision) {
-        acc[rally.id] = rally.decision;
-      }
+  const { activeMatch: match, setRallyDecision } = useMatchStore();
 
-      return acc;
-    }, {});
-  });
+  if (!match) {
+    return (
+      <Screen>
+        <PageHeader title="Aucun match" description="Importe une video pour commencer une revue." />
+      </Screen>
+    );
+  }
 
-  const completion = useMemo(() => {
-    const tagged = Object.keys(decisions).length;
-    return `${tagged}/${match.rallies.length}`;
-  }, [decisions, match.rallies.length]);
+  const currentMatch = match;
+  const completion = `${getTaggedRallyCount(currentMatch)}/${currentMatch.rallies.length}`;
 
   function handleDecision(rallyId: string, playerId: string, label: RallyLabel) {
-    setDecisions((current) => ({
-      ...current,
-      [rallyId]: {
-        id: `${rallyId}-${playerId}-${label}`,
-        rallyId,
-        playerId,
-        label
-      }
-    }));
+    setRallyDecision(currentMatch.id, rallyId, playerId, label);
   }
 
   return (
@@ -59,12 +48,12 @@ export default function ReviewScreen() {
         <Text style={{ color: colors.inkMuted, fontWeight: "800" }}>echanges tagues</Text>
       </XStack>
 
-      {match.rallies.map((rally) => (
+      {currentMatch.rallies.map((rally) => (
         <RallyDecisionCard
           key={rally.id}
           rally={rally}
-          players={match.players}
-          decision={decisions[rally.id]}
+          players={currentMatch.players}
+          decision={rally.decision}
           onDecision={handleDecision}
         />
       ))}

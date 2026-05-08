@@ -7,6 +7,19 @@ export type Player = {
   color: string;
 };
 
+export type MatchVideo = {
+  uri: string;
+  fileName?: string | null;
+  durationMs?: number | null;
+};
+
+export type CalibrationPoint = {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+};
+
 export type RallyLabel = "fault" | "winner";
 
 export type RallyDecision = {
@@ -38,6 +51,8 @@ export type Match = {
   recordedAt: string;
   duration: string;
   status: MatchStatus;
+  video?: MatchVideo;
+  calibrationPoints?: CalibrationPoint[];
   players: Player[];
   rallies: Rally[];
   stats: PlayerStats[];

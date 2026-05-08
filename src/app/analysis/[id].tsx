@@ -1,20 +1,37 @@
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Text, XStack, YStack } from "tamagui";
 import { Button } from "@/components/Button";
 import { PageHeader } from "@/components/PageHeader";
 import { Screen } from "@/components/Screen";
 import { StepList } from "@/components/StepList";
 import { colors } from "@/constants/theme";
-import { getMatch } from "@/data/mockMatches";
+import { useMatchStore } from "@/store/matchStore";
 
 export default function AnalysisScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const match = getMatch(id ?? "match-demo");
+  const { getMatch, selectMatch, setMatchStatus } = useMatchStore();
+  const match = getMatch(id);
+
+  if (!match) {
+    return (
+      <Screen>
+        <PageHeader title="Match introuvable" description="Retourne a la liste des matchs." />
+      </Screen>
+    );
+  }
+
+  const currentMatch = match;
+
+  function handleOpenReview() {
+    selectMatch(currentMatch.id);
+    setMatchStatus(currentMatch.id, "review");
+    router.push("/review");
+  }
 
   return (
     <Screen>
       <PageHeader
-        eyebrow={match.title}
+        eyebrow={currentMatch.title}
         title="Analyse video"
         description="Suivi du traitement, du tracking joueurs et du calcul de distance."
       />
@@ -59,11 +76,11 @@ export default function AnalysisScreen() {
       />
 
       <XStack flexWrap="wrap" gap="$3">
-        <Button href="/review" icon="list-outline">
+        <Button icon="list-outline" onPress={handleOpenReview}>
           Aller a la revue
         </Button>
         <Button
-          href={{ pathname: "/matches/[id]", params: { id: match.id } }}
+          href={{ pathname: "/matches/[id]", params: { id: currentMatch.id } }}
           icon="arrow-back-outline"
           variant="secondary"
         >

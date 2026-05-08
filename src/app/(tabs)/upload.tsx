@@ -1,10 +1,12 @@
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 import { useState } from "react";
 import { Text, YStack } from "tamagui";
 import { Button } from "@/components/Button";
 import { PageHeader } from "@/components/PageHeader";
 import { Screen } from "@/components/Screen";
 import { colors } from "@/constants/theme";
+import { useMatchStore } from "@/store/matchStore";
 
 type PickedVideo = {
   uri: string;
@@ -13,12 +15,15 @@ type PickedVideo = {
 };
 
 export default function UploadScreen() {
+  const { createMatchFromVideo } = useMatchStore();
   const [video, setVideo] = useState<PickedVideo | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function pickVideo() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permission.granted) {
+      setError("Autorise l'acces a la galerie pour importer une video.");
       return;
     }
 
@@ -29,11 +34,20 @@ export default function UploadScreen() {
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      setVideo({
+      const pickedVideo = {
         uri: asset.uri,
         fileName: asset.fileName,
         duration: asset.duration
+      };
+      const matchId = createMatchFromVideo({
+        uri: pickedVideo.uri,
+        fileName: pickedVideo.fileName,
+        durationMs: pickedVideo.duration
       });
+
+      setError(null);
+      setVideo(pickedVideo);
+      router.push({ pathname: "/calibration/[id]", params: { id: matchId } });
     }
   }
 
@@ -75,6 +89,12 @@ export default function UploadScreen() {
         </Button>
       </YStack>
 
+      {error ? (
+        <Text style={{ color: colors.danger, fontWeight: "800" }}>
+          {error}
+        </Text>
+      ) : null}
+
       {video ? (
         <YStack
           gap="$3"
@@ -91,12 +111,9 @@ export default function UploadScreen() {
           <Text style={{ color: colors.inkMuted, fontSize: 13 }} numberOfLines={2}>
             {video.uri}
           </Text>
-          <Button
-            href={{ pathname: "/calibration/[id]", params: { id: "match-demo" } }}
-            icon="scan-outline"
-          >
-            Passer a la calibration
-          </Button>
+          <Text style={{ color: colors.inkMuted, fontSize: 13 }}>
+            Match cree. Ouverture de la calibration...
+          </Text>
         </YStack>
       ) : null}
     </Screen>
