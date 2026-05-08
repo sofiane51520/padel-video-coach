@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Padel Video Coach",
+    "slug": "padel-video-coach",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "padelcoach",
+    "userInterfaceStyle": "automatic",
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "L'application utilise votre galerie pour importer les videos de matchs de padel.",
+          "cameraPermission": "L'application utilise la camera pour enregistrer ou importer une video de match."
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.padelvideocoach.app"
+    },
+    "android": {
+      "package": "com.padelvideocoach.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f2f2a"
+      }
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
