@@ -9,7 +9,7 @@ import { colors } from "@/constants/theme";
 import { useMatchStore } from "@/store/matchStore";
 
 export default function MatchesScreen() {
-  const { matches } = useMatchStore();
+  const { isHydrated, lastSavedAt, matches, resetLocalData } = useMatchStore();
 
   return (
     <Screen>
@@ -50,6 +50,34 @@ export default function MatchesScreen() {
           </YStack>
         </XStack>
       </YStack>
+
+      <XStack
+        flexWrap="wrap"
+        gap="$3"
+        style={{
+          alignItems: "center",
+          justifyContent: "space-between",
+          backgroundColor: colors.surface,
+          borderColor: colors.line,
+          borderRadius: 8,
+          borderWidth: 1,
+          padding: 14
+        }}
+      >
+        <YStack gap="$1" style={{ minWidth: 220 }}>
+          <Text style={{ color: colors.ink, fontSize: 14, fontWeight: "900" }}>
+            Sauvegarde locale {isHydrated ? "active" : "en cours"}
+          </Text>
+          <Text style={{ color: colors.inkMuted, fontSize: 13 }}>
+            {lastSavedAt
+              ? `Derniere sauvegarde ${new Date(lastSavedAt).toLocaleTimeString("fr-FR")}`
+              : "Les matchs seront conserves sur cet appareil."}
+          </Text>
+        </YStack>
+        <Button icon="refresh-outline" variant="secondary" onPress={resetLocalData}>
+          Reinitialiser
+        </Button>
+      </XStack>
 
       <YStack gap="$3">
         {matches.map((match) => (

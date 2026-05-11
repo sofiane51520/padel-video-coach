@@ -21,6 +21,7 @@ Squelette Expo pour une application cross-platform web, iOS et Android qui analy
 - Les noms des joueurs sont modifiables.
 - La revue enregistre les fautes et points gagnants sur le match actif.
 - Le rapport recalcule les fautes et points gagnants depuis les tags.
+- Les matchs sont sauvegardes localement avec AsyncStorage.
 
 ## Stack
 
@@ -28,6 +29,7 @@ Squelette Expo pour une application cross-platform web, iOS et Android qui analy
 - React Native + Expo Router
 - TypeScript
 - Tamagui
+- AsyncStorage
 - Web via React Native Web
 - Backend prevu : Python FastAPI + OpenCV + YOLO
 

@@ -1,4 +1,5 @@
-import { createContext, ReactNode, useContext, useMemo, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { matches as seedMatches, players as seedPlayers } from "@/data/mockMatches";
 import {
   CalibrationPoint,
@@ -17,7 +18,10 @@ type MatchStore = {
   activeMatchId: string | null;
   createMatchFromVideo: (video: CreateMatchInput) => string;
   getMatch: (id?: string | null) => Match | undefined;
+  isHydrated: boolean;
+  lastSavedAt: string | null;
   matches: Match[];
+  resetLocalData: () => void;
   selectMatch: (id: string) => void;
   setCalibrationPoints: (matchId: string, points: CalibrationPoint[]) => void;
   setMatchStatus: (matchId: string, status: MatchStatus) => void;
@@ -26,15 +30,82 @@ type MatchStore = {
 };
 
 const MatchStoreContext = createContext<MatchStore | null>(null);
+const STORAGE_KEY = "padel-video-coach:match-store:v1";
+
+type PersistedMatchStore = {
+  activeMatchId: string | null;
+  matches: Match[];
+};
 
 export function MatchStoreProvider({ children }: { children: ReactNode }) {
   const [matches, setMatches] = useState<Match[]>(seedMatches);
   const [activeMatchId, setActiveMatchId] = useState<string | null>(seedMatches[0]?.id ?? null);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const hasLoadedStorage = useRef(false);
 
   const activeMatch = useMemo(
     () => matches.find((match) => match.id === activeMatchId) ?? matches[0],
     [activeMatchId, matches]
   );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function hydrateStore() {
+      try {
+        const storedValue = await AsyncStorage.getItem(STORAGE_KEY);
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (storedValue) {
+          const parsedValue = JSON.parse(storedValue) as PersistedMatchStore;
+
+          if (Array.isArray(parsedValue.matches) && parsedValue.matches.length > 0) {
+            setMatches(parsedValue.matches);
+            setActiveMatchId(parsedValue.activeMatchId ?? parsedValue.matches[0].id);
+          }
+        }
+      } catch (error) {
+        console.warn("Unable to hydrate match store", error);
+      } finally {
+        if (isMounted) {
+          hasLoadedStorage.current = true;
+          setIsHydrated(true);
+        }
+      }
+    }
+
+    hydrateStore();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedStorage.current) {
+      return;
+    }
+
+    async function persistStore() {
+      try {
+        const payload: PersistedMatchStore = {
+          activeMatchId,
+          matches
+        };
+
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        setLastSavedAt(new Date().toISOString());
+      } catch (error) {
+        console.warn("Unable to persist match store", error);
+      }
+    }
+
+    persistStore();
+  }, [activeMatchId, matches]);
 
   function updateMatch(matchId: string, updater: (match: Match) => Match) {
     setMatches((current) => current.map((match) => (match.id === matchId ? updater(match) : match)));
@@ -75,7 +146,16 @@ export function MatchStoreProvider({ children }: { children: ReactNode }) {
       getMatch(id) {
         return matches.find((match) => match.id === id) ?? activeMatch;
       },
+      isHydrated,
+      lastSavedAt,
       matches,
+      resetLocalData() {
+        setMatches(seedMatches);
+        setActiveMatchId(seedMatches[0]?.id ?? null);
+        AsyncStorage.removeItem(STORAGE_KEY).catch((error) => {
+          console.warn("Unable to clear match store", error);
+        });
+      },
       selectMatch(id) {
         setActiveMatchId(id);
       },
@@ -117,7 +197,7 @@ export function MatchStoreProvider({ children }: { children: ReactNode }) {
         }));
       }
     }),
-    [activeMatch, activeMatchId, matches]
+    [activeMatch, activeMatchId, isHydrated, lastSavedAt, matches]
   );
 
   return <MatchStoreContext.Provider value={value}>{children}</MatchStoreContext.Provider>;
