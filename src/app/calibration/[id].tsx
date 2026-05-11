@@ -1,7 +1,14 @@
 import { VideoPlayer, VideoView, useVideoPlayer } from "expo-video";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
-import { GestureResponderEvent, LayoutChangeEvent, Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import {
+  GestureResponderEvent,
+  LayoutChangeEvent,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View
+} from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 import { Button } from "@/components/Button";
 import { CourtPreview } from "@/components/CourtPreview";
@@ -198,8 +205,19 @@ function VideoCalibrationSurface({
   uri: string;
 }) {
   const player = useCalibrationVideoPlayer(uri);
+  const windowDimensions = useWindowDimensions();
+  const [availableWidth, setAvailableWidth] = useState(0);
   const [layout, setLayout] = useState({ width: 0, height: 0 });
   const [videoAspectRatio, setVideoAspectRatio] = useState(defaultVideoAspectRatio);
+  const surfaceSize = useMemo(
+    () =>
+      getContainedSurfaceSize({
+        aspectRatio: videoAspectRatio,
+        availableWidth,
+        viewportHeight: windowDimensions.height
+      }),
+    [availableWidth, videoAspectRatio, windowDimensions.height]
+  );
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -216,6 +234,10 @@ function VideoCalibrationSurface({
   function handleLayout(event: LayoutChangeEvent) {
     const { height, width } = event.nativeEvent.layout;
     setLayout({ height, width });
+  }
+
+  function handleContainerLayout(event: LayoutChangeEvent) {
+    setAvailableWidth(event.nativeEvent.layout.width);
   }
 
   function handlePress(event: GestureResponderEvent) {
@@ -235,11 +257,17 @@ function VideoCalibrationSurface({
   }
 
   return (
-    <YStack gap="$3">
+    <YStack gap="$3" onLayout={handleContainerLayout}>
       <Pressable
         onLayout={handleLayout}
         onPress={handlePress}
-        style={[styles.videoSurface, { aspectRatio: videoAspectRatio }]}
+        style={[
+          styles.videoSurface,
+          {
+            width: surfaceSize.width,
+            height: surfaceSize.height
+          }
+        ]}
       >
         <VideoView
           contentFit="contain"
@@ -357,6 +385,40 @@ function formatVideoTime(totalSeconds: number): string {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function getContainedSurfaceSize({
+  aspectRatio,
+  availableWidth,
+  viewportHeight
+}: {
+  aspectRatio: number;
+  availableWidth: number;
+  viewportHeight: number;
+}) {
+  const width = Math.max(0, availableWidth);
+  const maxHeight = Math.max(220, Math.min(620, viewportHeight * 0.58));
+
+  if (!width) {
+    return {
+      width: "100%" as const,
+      height: undefined
+    };
+  }
+
+  const heightFromWidth = width / aspectRatio;
+
+  if (heightFromWidth <= maxHeight) {
+    return {
+      width,
+      height: heightFromWidth
+    };
+  }
+
+  return {
+    width: maxHeight * aspectRatio,
+    height: maxHeight
+  };
+}
+
 const styles = StyleSheet.create({
   staticSurface: {
     width: "100%",
@@ -366,7 +428,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.courtDark
   },
   videoSurface: {
-    width: "100%",
+    alignSelf: "center",
     borderRadius: 8,
     overflow: "hidden",
     backgroundColor: "#050807"
