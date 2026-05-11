@@ -1,0 +1,118 @@
+import time
+from datetime import datetime, timezone
+from uuid import uuid4
+
+from app.models.analysis import (
+    AnalysisJob,
+    AnalysisResult,
+    AnalysisStatus,
+    PlayerTrackingSummary,
+    RallySuggestion,
+    StoredVideo,
+)
+
+
+class AnalysisService:
+    def __init__(self) -> None:
+        self.jobs: dict[str, AnalysisJob] = {}
+        self.results: dict[str, AnalysisResult] = {}
+
+    def create_job(self, stored_video: StoredVideo, match_id: str | None) -> AnalysisJob:
+        job = AnalysisJob(
+            id=str(uuid4()),
+            match_id=match_id,
+            status=AnalysisStatus.queued,
+            progress=0,
+            message="Analyse en attente",
+            video=stored_video,
+        )
+        self.jobs[job.id] = job
+        return job
+
+    def get_job(self, analysis_id: str) -> AnalysisJob | None:
+        return self.jobs.get(analysis_id)
+
+    def get_result(self, analysis_id: str) -> AnalysisResult | None:
+        return self.results.get(analysis_id)
+
+    def run_simulated_analysis(self, analysis_id: str) -> None:
+        job = self.jobs.get(analysis_id)
+
+        if not job:
+            return
+
+        try:
+            self._update_job(
+                analysis_id,
+                status=AnalysisStatus.processing,
+                progress=20,
+                message="Extraction des frames",
+            )
+            time.sleep(0.4)
+            self._update_job(
+                analysis_id,
+                status=AnalysisStatus.processing,
+                progress=55,
+                message="Detection des joueurs",
+            )
+            time.sleep(0.4)
+            self._update_job(
+                analysis_id,
+                status=AnalysisStatus.processing,
+                progress=82,
+                message="Preparation des echanges",
+            )
+            time.sleep(0.4)
+
+            self.results[analysis_id] = self._create_placeholder_result(job)
+            self._update_job(
+                analysis_id,
+                status=AnalysisStatus.completed,
+                progress=100,
+                message="Analyse terminee",
+            )
+        except Exception as exc:
+            self._update_job(
+                analysis_id,
+                status=AnalysisStatus.failed,
+                progress=0,
+                message=f"Analyse echouee: {exc}",
+            )
+
+    def _update_job(
+        self,
+        analysis_id: str,
+        status: AnalysisStatus,
+        progress: int,
+        message: str,
+    ) -> None:
+        current_job = self.jobs[analysis_id]
+        self.jobs[analysis_id] = current_job.model_copy(
+            update={
+                "status": status,
+                "progress": progress,
+                "message": message,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        )
+
+    def _create_placeholder_result(self, job: AnalysisJob) -> AnalysisResult:
+        return AnalysisResult(
+            analysis_id=job.id,
+            match_id=job.match_id,
+            player_tracking=[
+                PlayerTrackingSummary(player_id="p1", distance_meters=0),
+                PlayerTrackingSummary(player_id="p2", distance_meters=0),
+                PlayerTrackingSummary(player_id="p3", distance_meters=0),
+                PlayerTrackingSummary(player_id="p4", distance_meters=0),
+            ],
+            rallies=[
+                RallySuggestion(id="r1", index=1, start_time="00:12", end_time="00:38"),
+                RallySuggestion(id="r2", index=2, start_time="00:52", end_time="01:21"),
+                RallySuggestion(id="r3", index=3, start_time="01:36", end_time="02:03"),
+                RallySuggestion(id="r4", index=4, start_time="02:18", end_time="02:49"),
+            ],
+        )
+
+
+analysis_service = AnalysisService()

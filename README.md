@@ -31,9 +31,9 @@ Squelette Expo pour une application cross-platform web, iOS et Android qui analy
 - Tamagui
 - AsyncStorage
 - Web via React Native Web
-- Backend prevu : Python FastAPI + OpenCV + YOLO
+- Backend : Python FastAPI, puis OpenCV + YOLO pour l'analyse video
 
-## Lancement
+## Lancement frontend
 
 Installe les dependances puis lance Expo :
 
@@ -50,6 +50,27 @@ corepack pnpm ios
 ```
 
 Note locale : sur cette machine, `node` est disponible mais `npm` pointe actuellement vers une installation utilisateur incomplete. Utilise `corepack pnpm`.
+
+## Lancement backend
+
+Le backend FastAPI est dans `backend`.
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -e ".[dev]"
+uvicorn app.main:app --reload --port 8000
+```
+
+Endpoints MVP :
+
+- `GET /health` : verification de l'API.
+- `POST /api/analyses` : upload d'une video et creation d'un job d'analyse.
+- `GET /api/analyses/{analysis_id}` : statut d'un job.
+- `GET /api/analyses/{analysis_id}/result` : resultat d'analyse quand il est pret.
+
+Le moteur d'analyse est volontairement simule pour l'instant. La prochaine etape consiste a remplacer ce service par le pipeline video : extraction d'images, detection terrain/joueurs, tracking, puis suggestions d'echanges a labelliser.
 
 ## Structure
 
@@ -72,4 +93,10 @@ src/data
 src/store
 src/types
 src/utils
+
+backend/app
+  api
+  core
+  models
+  services
 ```
