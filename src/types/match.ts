@@ -11,6 +11,17 @@ export type MatchVideo = {
   uri: string;
   fileName?: string | null;
   durationMs?: number | null;
+  mimeType?: string | null;
+};
+
+export type AnalysisJobStatus = "queued" | "processing" | "completed" | "failed";
+
+export type MatchAnalysisJob = {
+  id: string;
+  status: AnalysisJobStatus;
+  progress: number;
+  message: string;
+  updatedAt?: string;
 };
 
 export type CalibrationPoint = {
@@ -51,6 +62,7 @@ export type Match = {
   recordedAt: string;
   duration: string;
   status: MatchStatus;
+  analysisJob?: MatchAnalysisJob;
   video?: MatchVideo;
   calibrationPoints?: CalibrationPoint[];
   players: Player[];

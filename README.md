@@ -51,6 +51,14 @@ corepack pnpm ios
 
 Note locale : sur cette machine, `node` est disponible mais `npm` pointe actuellement vers une installation utilisateur incomplete. Utilise `corepack pnpm`.
 
+L'app Expo lit l'URL backend depuis `EXPO_PUBLIC_API_URL`. En local web, `.env.example` utilise :
+
+```bash
+EXPO_PUBLIC_API_URL=http://localhost:8000
+```
+
+Sur un telephone physique, remplace `localhost` par l'adresse IP locale de ton ordinateur.
+
 ## Lancement backend
 
 Le backend FastAPI est dans `backend`.

@@ -37,12 +37,14 @@ export default function UploadScreen() {
       const pickedVideo = {
         uri: asset.uri,
         fileName: asset.fileName,
-        duration: asset.duration
+        duration: asset.duration,
+        mimeType: asset.mimeType
       };
       const matchId = createMatchFromVideo({
         uri: pickedVideo.uri,
         fileName: pickedVideo.fileName,
-        durationMs: pickedVideo.duration
+        durationMs: pickedVideo.duration,
+        mimeType: pickedVideo.mimeType
       });
 
       setError(null);

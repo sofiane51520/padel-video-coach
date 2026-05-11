@@ -4,6 +4,7 @@ import { matches as seedMatches, players as seedPlayers } from "@/data/mockMatch
 import {
   CalibrationPoint,
   Match,
+  MatchAnalysisJob,
   MatchStatus,
   MatchVideo,
   Player,
@@ -16,6 +17,13 @@ type CreateMatchInput = MatchVideo;
 type MatchStore = {
   activeMatch?: Match;
   activeMatchId: string | null;
+  applyAnalysisResult: (
+    matchId: string,
+    result: {
+      player_tracking: { distance_meters: number }[];
+      rallies: { id: string; index: number; start_time: string; end_time: string }[];
+    }
+  ) => void;
   createMatchFromVideo: (video: CreateMatchInput) => string;
   getMatch: (id?: string | null) => Match | undefined;
   isHydrated: boolean;
@@ -23,6 +31,7 @@ type MatchStore = {
   matches: Match[];
   resetLocalData: () => void;
   selectMatch: (id: string) => void;
+  setAnalysisJob: (matchId: string, analysisJob: MatchAnalysisJob) => void;
   setCalibrationPoints: (matchId: string, points: CalibrationPoint[]) => void;
   setMatchStatus: (matchId: string, status: MatchStatus) => void;
   setRallyDecision: (matchId: string, rallyId: string, playerId: string, label: RallyLabel) => void;
@@ -115,6 +124,24 @@ export function MatchStoreProvider({ children }: { children: ReactNode }) {
     () => ({
       activeMatch,
       activeMatchId,
+      applyAnalysisResult(matchId, result) {
+        updateMatch(matchId, (match) => ({
+          ...match,
+          status: "review",
+          rallies: result.rallies.map((rally) => ({
+            id: `${match.id}-${rally.id}`,
+            index: rally.index,
+            startTime: rally.start_time,
+            endTime: rally.end_time
+          })),
+          stats: match.players.map((player, index) => ({
+            playerId: player.id,
+            distanceMeters: Math.round(result.player_tracking[index]?.distance_meters ?? 0),
+            faults: 0,
+            winners: 0
+          }))
+        }));
+      },
       createMatchFromVideo(video) {
         const id = createId("match");
         const defaultPlayers = createDefaultPlayers(id);
@@ -158,6 +185,13 @@ export function MatchStoreProvider({ children }: { children: ReactNode }) {
       },
       selectMatch(id) {
         setActiveMatchId(id);
+      },
+      setAnalysisJob(matchId, analysisJob) {
+        updateMatch(matchId, (match) => ({
+          ...match,
+          analysisJob,
+          status: analysisJob.status === "completed" ? match.status : "analysis"
+        }));
       },
       setCalibrationPoints(matchId, points) {
         updateMatch(matchId, (match) => ({

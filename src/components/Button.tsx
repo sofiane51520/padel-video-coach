@@ -9,6 +9,7 @@ type IconName = ComponentProps<typeof Ionicons>["name"];
 
 type ButtonProps = {
   children: ReactNode;
+  disabled?: boolean;
   icon?: IconName;
   href?: Href;
   variant?: "primary" | "secondary" | "ghost";
@@ -16,11 +17,23 @@ type ButtonProps = {
   style?: ViewStyle;
 };
 
-export function Button({ children, icon, href, onPress, style, variant = "primary" }: ButtonProps) {
+export function Button({
+  children,
+  disabled = false,
+  icon,
+  href,
+  onPress,
+  style,
+  variant = "primary"
+}: ButtonProps) {
   const isPrimary = variant === "primary";
   const isGhost = variant === "ghost";
 
   function handlePress() {
+    if (disabled) {
+      return;
+    }
+
     if (href) {
       router.push(href);
       return;
@@ -32,6 +45,7 @@ export function Button({ children, icon, href, onPress, style, variant = "primar
   return (
     <TButton
       unstyled
+      disabled={disabled}
       onPress={handlePress}
       gap="$2"
       pressStyle={{ opacity: 0.74, scale: 0.98 }}
@@ -47,7 +61,8 @@ export function Button({ children, icon, href, onPress, style, variant = "primar
           justifyContent: "center",
           backgroundColor: isPrimary ? colors.court : isGhost ? "transparent" : colors.surface,
           borderWidth: isPrimary || isGhost ? 0 : 1,
-          borderColor: colors.line
+          borderColor: colors.line,
+          opacity: disabled ? 0.52 : 1
         },
         style
       ]}
