@@ -245,9 +245,9 @@ function VideoCalibrationSurface({
           contentFit="contain"
           nativeControls={false}
           player={player}
-          style={StyleSheet.absoluteFill}
+          style={styles.videoView}
         />
-        <View style={styles.markerLayer}>
+        <View pointerEvents="none" style={styles.markerLayer}>
           {points.map((point, index) => (
             <View
               key={point.id}
@@ -370,6 +370,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: "hidden",
     backgroundColor: "#050807"
+  },
+  videoView: {
+    width: "100%",
+    height: "100%"
   },
   markerLayer: {
     ...StyleSheet.absoluteFillObject
