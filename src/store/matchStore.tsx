@@ -22,6 +22,18 @@ type MatchStore = {
     result: {
       player_tracking: { distance_meters: number; player_id: string }[];
       rallies: { id: string; index: number; start_time: string; end_time: string }[];
+      video_probe: {
+        width: number;
+        height: number;
+        fps: number;
+        frame_count: number;
+        duration_seconds: number;
+        extracted_frames: {
+          frame_index: number;
+          timestamp_seconds: number;
+          file_path: string;
+        }[];
+      };
     }
   ) => void;
   createMatchFromVideo: (video: CreateMatchInput) => string;
@@ -132,6 +144,18 @@ export function MatchStoreProvider({ children }: { children: ReactNode }) {
         updateMatch(matchId, (match) => ({
           ...match,
           status: "review",
+          videoProbe: {
+            width: result.video_probe.width,
+            height: result.video_probe.height,
+            fps: result.video_probe.fps,
+            frameCount: result.video_probe.frame_count,
+            durationSeconds: result.video_probe.duration_seconds,
+            extractedFrames: result.video_probe.extracted_frames.map((frame) => ({
+              frameIndex: frame.frame_index,
+              timestampSeconds: frame.timestamp_seconds,
+              filePath: frame.file_path
+            }))
+          },
           rallies: result.rallies.map((rally) => ({
             id: `${match.id}-${rally.id}`,
             index: rally.index,

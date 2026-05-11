@@ -10,7 +10,9 @@ from app.models.analysis import (
     PlayerTrackingSummary,
     RallySuggestion,
     StoredVideo,
+    VideoProbe,
 )
+from app.services.video_probe import video_probe_service
 
 
 class AnalysisService:
@@ -55,7 +57,7 @@ class AnalysisService:
                 progress=20,
                 message="Extraction des frames",
             )
-            time.sleep(0.4)
+            video_probe = video_probe_service.probe(job.video)
             self._update_job(
                 analysis_id,
                 status=AnalysisStatus.processing,
@@ -71,7 +73,7 @@ class AnalysisService:
             )
             time.sleep(0.4)
 
-            self.results[analysis_id] = self._create_placeholder_result(job)
+            self.results[analysis_id] = self._create_placeholder_result(job, video_probe)
             self._update_job(
                 analysis_id,
                 status=AnalysisStatus.completed,
@@ -103,13 +105,14 @@ class AnalysisService:
             }
         )
 
-    def _create_placeholder_result(self, job: AnalysisJob) -> AnalysisResult:
+    def _create_placeholder_result(self, job: AnalysisJob, video_probe: VideoProbe) -> AnalysisResult:
         players = job.metadata.players
         player_ids = [player.id for player in players] or ["p1", "p2", "p3", "p4"]
 
         return AnalysisResult(
             analysis_id=job.id,
             match_id=job.match_id,
+            video_probe=video_probe,
             player_tracking=[
                 PlayerTrackingSummary(player_id=player_id, distance_meters=0)
                 for player_id in player_ids

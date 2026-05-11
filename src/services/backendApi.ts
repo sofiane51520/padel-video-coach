@@ -16,6 +16,18 @@ export type BackendAnalysisJob = {
 export type BackendAnalysisResult = {
   analysis_id: string;
   match_id?: string | null;
+  video_probe: {
+    width: number;
+    height: number;
+    fps: number;
+    frame_count: number;
+    duration_seconds: number;
+    extracted_frames: {
+      frame_index: number;
+      timestamp_seconds: number;
+      file_path: string;
+    }[];
+  };
   player_tracking: {
     player_id: string;
     distance_meters: number;

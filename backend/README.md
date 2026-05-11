@@ -39,3 +39,4 @@ GET  /api/analyses/{analysis_id}/result
 - `players` : tableau JSON des joueurs identifies dans l'app.
 
 Le traitement est simule pour le moment. La prochaine etape sera de remplacer `app/services/analysis_service.py` par un pipeline OpenCV/YOLO.
+Le backend lit deja la video avec OpenCV pour extraire les metadonnees et une frame par seconde dans `.data/frames`.

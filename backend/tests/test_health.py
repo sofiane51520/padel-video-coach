@@ -1,3 +1,7 @@
+from pathlib import Path
+
+import cv2
+import numpy as np
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -13,7 +17,9 @@ def test_health() -> None:
     assert response.json()["status"] == "ok"
 
 
-def test_create_analysis_with_match_metadata() -> None:
+def test_create_analysis_with_match_metadata(tmp_path: Path) -> None:
+    video_path = create_sample_video(tmp_path)
+
     response = client.post(
         "/api/analyses",
         data={
@@ -27,7 +33,7 @@ def test_create_analysis_with_match_metadata() -> None:
                 '{"id":"match-1-p2","label":"Joueur 2","team":"A"}]'
             ),
         },
-        files={"video": ("match.mp4", b"fake video", "video/mp4")},
+        files={"video": ("match.avi", video_path.read_bytes(), "video/x-msvideo")},
     )
 
     assert response.status_code == 202
@@ -39,4 +45,25 @@ def test_create_analysis_with_match_metadata() -> None:
 
     assert result_response.status_code == 200
     result = result_response.json()
+    assert result["video_probe"]["width"] == 320
+    assert result["video_probe"]["height"] == 180
+    assert result["video_probe"]["fps"] == 2
+    assert len(result["video_probe"]["extracted_frames"]) >= 2
     assert result["player_tracking"][0]["player_id"] == "match-1-p1"
+
+
+def create_sample_video(tmp_path: Path) -> Path:
+    path = tmp_path / "sample.avi"
+    writer = cv2.VideoWriter(
+        str(path),
+        cv2.VideoWriter_fourcc(*"MJPG"),
+        2,
+        (320, 180),
+    )
+
+    for index in range(4):
+        frame = np.full((180, 320, 3), index * 40, dtype=np.uint8)
+        writer.write(frame)
+
+    writer.release()
+    return path

@@ -55,6 +55,21 @@ class PlayerTrackingSummary(BaseModel):
     distance_meters: int
 
 
+class ExtractedFrame(BaseModel):
+    frame_index: int
+    timestamp_seconds: float
+    file_path: Path
+
+
+class VideoProbe(BaseModel):
+    width: int
+    height: int
+    fps: float
+    frame_count: int
+    duration_seconds: float
+    extracted_frames: list[ExtractedFrame]
+
+
 class RallySuggestion(BaseModel):
     id: str
     index: int
@@ -65,6 +80,7 @@ class RallySuggestion(BaseModel):
 class AnalysisResult(BaseModel):
     analysis_id: str
     match_id: str | None = None
+    video_probe: VideoProbe
     player_tracking: list[PlayerTrackingSummary]
     rallies: list[RallySuggestion]
     generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

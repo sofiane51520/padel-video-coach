@@ -204,6 +204,29 @@ function AnalysisContent({
 
       <StepList steps={steps} />
 
+      {currentMatch.videoProbe ? (
+        <YStack
+          gap="$3"
+          style={{
+            backgroundColor: colors.surface,
+            borderColor: colors.line,
+            borderRadius: 8,
+            borderWidth: 1,
+            padding: 18
+          }}
+        >
+          <Text style={{ color: colors.ink, fontSize: 18, fontWeight: "900" }}>
+            Metadonnees video
+          </Text>
+          <XStack flexWrap="wrap" gap="$3">
+            <ProbeMetric label="Resolution" value={`${currentMatch.videoProbe.width} x ${currentMatch.videoProbe.height}`} />
+            <ProbeMetric label="FPS" value={`${currentMatch.videoProbe.fps}`} />
+            <ProbeMetric label="Duree" value={`${Math.round(currentMatch.videoProbe.durationSeconds)} s`} />
+            <ProbeMetric label="Frames extraites" value={`${currentMatch.videoProbe.extractedFrames.length}`} />
+          </XStack>
+        </YStack>
+      ) : null}
+
       {error ? <Text style={{ color: colors.danger, fontWeight: "800" }}>{error}</Text> : null}
 
       <XStack flexWrap="wrap" gap="$3">
@@ -219,6 +242,26 @@ function AnalysisContent({
         </Button>
       </XStack>
     </Screen>
+  );
+}
+
+function ProbeMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <YStack
+      gap="$1"
+      style={{
+        minWidth: 140,
+        borderColor: colors.line,
+        borderRadius: 8,
+        borderWidth: 1,
+        padding: 12
+      }}
+    >
+      <Text style={{ color: colors.inkMuted, fontSize: 12, fontWeight: "900", textTransform: "uppercase" }}>
+        {label}
+      </Text>
+      <Text style={{ color: colors.ink, fontSize: 18, fontWeight: "900" }}>{value}</Text>
+    </YStack>
   );
 }
 

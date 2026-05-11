@@ -24,6 +24,21 @@ export type MatchAnalysisJob = {
   updatedAt?: string;
 };
 
+export type ExtractedFrame = {
+  frameIndex: number;
+  timestampSeconds: number;
+  filePath: string;
+};
+
+export type VideoProbe = {
+  width: number;
+  height: number;
+  fps: number;
+  frameCount: number;
+  durationSeconds: number;
+  extractedFrames: ExtractedFrame[];
+};
+
 export type CalibrationPoint = {
   id: string;
   label: string;
@@ -64,6 +79,7 @@ export type Match = {
   status: MatchStatus;
   analysisJob?: MatchAnalysisJob;
   video?: MatchVideo;
+  videoProbe?: VideoProbe;
   calibrationPoints?: CalibrationPoint[];
   players: Player[];
   rallies: Rally[];

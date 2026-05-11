@@ -12,6 +12,7 @@ class Settings(BaseSettings):
         default_factory=lambda: ["http://localhost:8090", "http://localhost:8081"]
     )
     upload_dir: Path = Path(".data/uploads")
+    frame_dir: Path = Path(".data/frames")
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -31,6 +32,7 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     settings = Settings()
     settings.upload_dir.mkdir(parents=True, exist_ok=True)
+    settings.frame_dir.mkdir(parents=True, exist_ok=True)
     return settings
 
 
