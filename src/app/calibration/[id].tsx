@@ -17,6 +17,7 @@ const calibrationLabels = [
   "Coin avant droit",
   "Coin avant gauche"
 ];
+const defaultVideoAspectRatio = 16 / 9;
 
 export default function CalibrationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -164,7 +165,7 @@ function StaticCalibrationSurface({
 
   return (
     <YStack gap="$3">
-      <Pressable onLayout={handleLayout} onPress={handlePress} style={styles.surface}>
+      <Pressable onLayout={handleLayout} onPress={handlePress} style={styles.staticSurface}>
         <CourtPreview />
         <View style={styles.markerLayer}>
           {points.map((point, index) => (
@@ -198,6 +199,19 @@ function VideoCalibrationSurface({
 }) {
   const player = useCalibrationVideoPlayer(uri);
   const [layout, setLayout] = useState({ width: 0, height: 0 });
+  const [videoAspectRatio, setVideoAspectRatio] = useState(defaultVideoAspectRatio);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      const size = player.videoTrack?.size ?? player.availableVideoTracks[0]?.size;
+
+      if (size?.width && size.height) {
+        setVideoAspectRatio(size.width / size.height);
+      }
+    }, 250);
+
+    return () => clearInterval(intervalId);
+  }, [player]);
 
   function handleLayout(event: LayoutChangeEvent) {
     const { height, width } = event.nativeEvent.layout;
@@ -222,7 +236,11 @@ function VideoCalibrationSurface({
 
   return (
     <YStack gap="$3">
-      <Pressable onLayout={handleLayout} onPress={handlePress} style={styles.surface}>
+      <Pressable
+        onLayout={handleLayout}
+        onPress={handlePress}
+        style={[styles.videoSurface, { aspectRatio: videoAspectRatio }]}
+      >
         <VideoView
           contentFit="contain"
           nativeControls={false}
@@ -340,12 +358,18 @@ function formatVideoTime(totalSeconds: number): string {
 }
 
 const styles = StyleSheet.create({
-  surface: {
+  staticSurface: {
     width: "100%",
-    aspectRatio: 1.78,
+    aspectRatio: defaultVideoAspectRatio,
     borderRadius: 8,
     overflow: "hidden",
     backgroundColor: colors.courtDark
+  },
+  videoSurface: {
+    width: "100%",
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#050807"
   },
   markerLayer: {
     ...StyleSheet.absoluteFillObject
