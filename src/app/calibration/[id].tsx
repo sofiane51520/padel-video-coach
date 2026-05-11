@@ -1,6 +1,6 @@
-import { VideoView, useVideoPlayer } from "expo-video";
+import { VideoPlayer, VideoView, useVideoPlayer } from "expo-video";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GestureResponderEvent, LayoutChangeEvent, Pressable, StyleSheet, View } from "react-native";
 import { Text, XStack, YStack } from "tamagui";
 import { Button } from "@/components/Button";
@@ -125,6 +125,20 @@ function CalibrationSurface({
   points: CalibrationPoint[];
   videoUri?: string;
 }) {
+  if (videoUri) {
+    return <VideoCalibrationSurface onAddPoint={onAddPoint} points={points} uri={videoUri} />;
+  }
+
+  return <StaticCalibrationSurface onAddPoint={onAddPoint} points={points} />;
+}
+
+function StaticCalibrationSurface({
+  onAddPoint,
+  points
+}: {
+  onAddPoint: (point: CalibrationPoint) => void;
+  points: CalibrationPoint[];
+}) {
   const [layout, setLayout] = useState({ width: 0, height: 0 });
 
   function handleLayout(event: LayoutChangeEvent) {
@@ -149,43 +163,180 @@ function CalibrationSurface({
   }
 
   return (
-    <Pressable onLayout={handleLayout} onPress={handlePress} style={styles.surface}>
-      {videoUri ? <CalibrationVideo uri={videoUri} /> : <CourtPreview />}
-      <View style={styles.markerLayer}>
-        {points.map((point, index) => (
-          <View
-            key={point.id}
-            style={[
-              styles.marker,
-              {
-                left: `${point.x * 100}%`,
-                top: `${point.y * 100}%`
-              }
-            ]}
-          >
-            <Text style={styles.markerLabel}>{index + 1}</Text>
-          </View>
-        ))}
-      </View>
-    </Pressable>
+    <YStack gap="$3">
+      <Pressable onLayout={handleLayout} onPress={handlePress} style={styles.surface}>
+        <CourtPreview />
+        <View style={styles.markerLayer}>
+          {points.map((point, index) => (
+            <View
+              key={point.id}
+              style={[
+                styles.marker,
+                {
+                  left: `${point.x * 100}%`,
+                  top: `${point.y * 100}%`
+                }
+              ]}
+            >
+              <Text style={styles.markerLabel}>{index + 1}</Text>
+            </View>
+          ))}
+        </View>
+      </Pressable>
+    </YStack>
   );
 }
 
-function CalibrationVideo({ uri }: { uri: string }) {
-  const player = useVideoPlayer(uri, (videoPlayer) => {
+function VideoCalibrationSurface({
+  onAddPoint,
+  points,
+  uri
+}: {
+  onAddPoint: (point: CalibrationPoint) => void;
+  points: CalibrationPoint[];
+  uri: string;
+}) {
+  const player = useCalibrationVideoPlayer(uri);
+  const [layout, setLayout] = useState({ width: 0, height: 0 });
+
+  function handleLayout(event: LayoutChangeEvent) {
+    const { height, width } = event.nativeEvent.layout;
+    setLayout({ height, width });
+  }
+
+  function handlePress(event: GestureResponderEvent) {
+    if (!layout.width || !layout.height || points.length >= 4) {
+      return;
+    }
+
+    const { locationX, locationY } = event.nativeEvent;
+    const index = points.length;
+
+    onAddPoint({
+      id: `calibration-${index + 1}`,
+      label: calibrationLabels[index],
+      x: locationX / layout.width,
+      y: locationY / layout.height
+    });
+  }
+
+  return (
+    <YStack gap="$3">
+      <Pressable onLayout={handleLayout} onPress={handlePress} style={styles.surface}>
+        <VideoView
+          contentFit="contain"
+          nativeControls={false}
+          player={player}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.markerLayer}>
+          {points.map((point, index) => (
+            <View
+              key={point.id}
+              style={[
+                styles.marker,
+                {
+                  left: `${point.x * 100}%`,
+                  top: `${point.y * 100}%`
+                }
+              ]}
+            >
+              <Text style={styles.markerLabel}>{index + 1}</Text>
+            </View>
+          ))}
+        </View>
+      </Pressable>
+      <CalibrationVideoControls player={player} />
+    </YStack>
+  );
+}
+
+function CalibrationVideoControls({ player }: { player: VideoPlayer }) {
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [progressLayout, setProgressLayout] = useState({ width: 0 });
+  const safeDuration = duration > 0 ? duration : 0;
+  const progress = safeDuration > 0 ? Math.min(1, currentTime / safeDuration) : 0;
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setCurrentTime(player.currentTime || 0);
+      setDuration(player.duration || 0);
+    }, 250);
+
+    return () => clearInterval(intervalId);
+  }, [player]);
+
+  function seekTo(seconds: number) {
+    const nextTime = clamp(seconds, 0, safeDuration || seconds);
+    player.pause();
+    player.currentTime = nextTime;
+    setCurrentTime(nextTime);
+  }
+
+  function handleProgressLayout(event: LayoutChangeEvent) {
+    setProgressLayout({ width: event.nativeEvent.layout.width });
+  }
+
+  function handleProgressPress(event: GestureResponderEvent) {
+    if (!progressLayout.width || safeDuration <= 0) {
+      return;
+    }
+
+    seekTo((event.nativeEvent.locationX / progressLayout.width) * safeDuration);
+  }
+
+  return (
+    <YStack gap="$3" style={styles.videoControls}>
+      <XStack style={{ alignItems: "center", justifyContent: "space-between" }}>
+        <Text style={styles.videoTime}>{formatVideoTime(currentTime)}</Text>
+        <Text style={styles.videoTimeMuted}>{formatVideoTime(safeDuration)}</Text>
+      </XStack>
+
+      <Pressable onLayout={handleProgressLayout} onPress={handleProgressPress} style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+        <View style={[styles.progressHandle, { left: `${progress * 100}%` }]} />
+      </Pressable>
+
+      <XStack flexWrap="wrap" gap="$2">
+        <Button icon="play-skip-back-outline" variant="secondary" onPress={() => seekTo(0)}>
+          Debut
+        </Button>
+        <Button icon="play-back-outline" variant="secondary" onPress={() => seekTo(currentTime - 5)}>
+          -5 s
+        </Button>
+        <Button icon="chevron-back-outline" variant="secondary" onPress={() => seekTo(currentTime - 1)}>
+          -1 s
+        </Button>
+        <Button icon="chevron-forward-outline" variant="secondary" onPress={() => seekTo(currentTime + 1)}>
+          +1 s
+        </Button>
+        <Button icon="play-forward-outline" variant="secondary" onPress={() => seekTo(currentTime + 5)}>
+          +5 s
+        </Button>
+      </XStack>
+    </YStack>
+  );
+}
+
+function useCalibrationVideoPlayer(uri: string) {
+  return useVideoPlayer(uri, (videoPlayer) => {
     videoPlayer.muted = true;
     videoPlayer.currentTime = 0;
     videoPlayer.pause();
   });
+}
 
-  return (
-    <VideoView
-      contentFit="contain"
-      nativeControls={false}
-      player={player}
-      style={StyleSheet.absoluteFill}
-    />
-  );
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function formatVideoTime(totalSeconds: number): string {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 const styles = StyleSheet.create({
@@ -215,5 +366,46 @@ const styles = StyleSheet.create({
   markerLabel: {
     color: colors.ink,
     fontWeight: "900"
+  },
+  progressFill: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 999,
+    backgroundColor: colors.court
+  },
+  progressHandle: {
+    position: "absolute",
+    top: -6,
+    width: 20,
+    height: 20,
+    marginLeft: -10,
+    borderRadius: 10,
+    backgroundColor: colors.gold,
+    borderColor: colors.surface,
+    borderWidth: 2
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: colors.line
+  },
+  videoControls: {
+    borderColor: colors.line,
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 14,
+    backgroundColor: colors.background
+  },
+  videoTime: {
+    color: colors.ink,
+    fontSize: 16,
+    fontWeight: "900"
+  },
+  videoTimeMuted: {
+    color: colors.inkMuted,
+    fontSize: 14,
+    fontWeight: "800"
   }
 });
