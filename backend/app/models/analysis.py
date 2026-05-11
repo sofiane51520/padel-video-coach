@@ -20,6 +20,24 @@ class StoredVideo(BaseModel):
     size_bytes: int
 
 
+class CalibrationPointInput(BaseModel):
+    id: str
+    label: str
+    x: float = Field(ge=0, le=1)
+    y: float = Field(ge=0, le=1)
+
+
+class PlayerInput(BaseModel):
+    id: str
+    label: str
+    team: str
+
+
+class AnalysisMetadata(BaseModel):
+    calibration_points: list[CalibrationPointInput] = Field(default_factory=list)
+    players: list[PlayerInput] = Field(default_factory=list)
+
+
 class AnalysisJob(BaseModel):
     id: str
     match_id: str | None = None
@@ -27,6 +45,7 @@ class AnalysisJob(BaseModel):
     progress: int = Field(ge=0, le=100)
     message: str
     video: StoredVideo
+    metadata: AnalysisMetadata = Field(default_factory=AnalysisMetadata)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

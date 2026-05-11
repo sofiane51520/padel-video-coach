@@ -31,4 +31,11 @@ GET  /api/analyses/{analysis_id}
 GET  /api/analyses/{analysis_id}/result
 ```
 
+`POST /api/analyses` attend un formulaire multipart :
+
+- `video` : fichier video.
+- `match_id` : identifiant du match cote app.
+- `calibration_points` : tableau JSON des points terrain normalises.
+- `players` : tableau JSON des joueurs identifies dans l'app.
+
 Le traitement est simule pour le moment. La prochaine etape sera de remplacer `app/services/analysis_service.py` par un pipeline OpenCV/YOLO.

@@ -83,7 +83,9 @@ function AnalysisContent({
       try {
         setError(null);
         const job = await startVideoAnalysis({
+          calibrationPoints: currentMatch.calibrationPoints ?? [],
           matchId: currentMatch.id,
+          players: currentMatch.players,
           video: analysisVideo
         });
 
@@ -108,7 +110,14 @@ function AnalysisContent({
     return () => {
       isCancelled = true;
     };
-  }, [analysisId, currentMatch.id, currentMatch.video, setAnalysisJob]);
+  }, [
+    analysisId,
+    currentMatch.calibrationPoints,
+    currentMatch.id,
+    currentMatch.players,
+    currentMatch.video,
+    setAnalysisJob
+  ]);
 
   useEffect(() => {
     if (!analysisId || isCompleted || isFailed) {

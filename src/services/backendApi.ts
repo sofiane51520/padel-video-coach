@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 
-import { AnalysisJobStatus, MatchVideo } from "@/types/match";
+import { AnalysisJobStatus, CalibrationPoint, MatchVideo, Player } from "@/types/match";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -29,7 +29,9 @@ export type BackendAnalysisResult = {
 };
 
 type StartAnalysisInput = {
+  calibrationPoints: CalibrationPoint[];
   matchId: string;
+  players: Player[];
   video: MatchVideo;
 };
 
@@ -37,9 +39,17 @@ export async function startVideoAnalysis(input: StartAnalysisInput): Promise<Bac
   const formData = new FormData();
   const fileName = input.video.fileName ?? "padel-video.mp4";
   const mimeType = input.video.mimeType ?? "video/mp4";
+  const videoPayload = await createVideoPayload(input.video.uri, fileName, mimeType);
 
   formData.append("match_id", input.matchId);
-  formData.append("video", await createVideoPayload(input.video.uri, fileName, mimeType));
+  formData.append("calibration_points", JSON.stringify(input.calibrationPoints));
+  formData.append("players", JSON.stringify(input.players));
+
+  if (Platform.OS === "web") {
+    formData.append("video", videoPayload, fileName);
+  } else {
+    formData.append("video", videoPayload);
+  }
 
   return request<BackendAnalysisJob>("/api/analyses", {
     method: "POST",

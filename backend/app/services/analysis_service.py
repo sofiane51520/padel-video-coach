@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from app.models.analysis import (
+    AnalysisMetadata,
     AnalysisJob,
     AnalysisResult,
     AnalysisStatus,
@@ -17,7 +18,12 @@ class AnalysisService:
         self.jobs: dict[str, AnalysisJob] = {}
         self.results: dict[str, AnalysisResult] = {}
 
-    def create_job(self, stored_video: StoredVideo, match_id: str | None) -> AnalysisJob:
+    def create_job(
+        self,
+        stored_video: StoredVideo,
+        match_id: str | None,
+        metadata: AnalysisMetadata,
+    ) -> AnalysisJob:
         job = AnalysisJob(
             id=str(uuid4()),
             match_id=match_id,
@@ -25,6 +31,7 @@ class AnalysisService:
             progress=0,
             message="Analyse en attente",
             video=stored_video,
+            metadata=metadata,
         )
         self.jobs[job.id] = job
         return job
@@ -97,14 +104,15 @@ class AnalysisService:
         )
 
     def _create_placeholder_result(self, job: AnalysisJob) -> AnalysisResult:
+        players = job.metadata.players
+        player_ids = [player.id for player in players] or ["p1", "p2", "p3", "p4"]
+
         return AnalysisResult(
             analysis_id=job.id,
             match_id=job.match_id,
             player_tracking=[
-                PlayerTrackingSummary(player_id="p1", distance_meters=0),
-                PlayerTrackingSummary(player_id="p2", distance_meters=0),
-                PlayerTrackingSummary(player_id="p3", distance_meters=0),
-                PlayerTrackingSummary(player_id="p4", distance_meters=0),
+                PlayerTrackingSummary(player_id=player_id, distance_meters=0)
+                for player_id in player_ids
             ],
             rallies=[
                 RallySuggestion(id="r1", index=1, start_time="00:12", end_time="00:38"),

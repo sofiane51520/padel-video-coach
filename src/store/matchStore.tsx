@@ -20,7 +20,7 @@ type MatchStore = {
   applyAnalysisResult: (
     matchId: string,
     result: {
-      player_tracking: { distance_meters: number }[];
+      player_tracking: { distance_meters: number; player_id: string }[];
       rallies: { id: string; index: number; start_time: string; end_time: string }[];
     }
   ) => void;
@@ -125,6 +125,10 @@ export function MatchStoreProvider({ children }: { children: ReactNode }) {
       activeMatch,
       activeMatchId,
       applyAnalysisResult(matchId, result) {
+        const distanceByPlayerId = new Map(
+          result.player_tracking.map((tracking) => [tracking.player_id, tracking.distance_meters])
+        );
+
         updateMatch(matchId, (match) => ({
           ...match,
           status: "review",
@@ -136,7 +140,9 @@ export function MatchStoreProvider({ children }: { children: ReactNode }) {
           })),
           stats: match.players.map((player, index) => ({
             playerId: player.id,
-            distanceMeters: Math.round(result.player_tracking[index]?.distance_meters ?? 0),
+            distanceMeters: Math.round(
+              distanceByPlayerId.get(player.id) ?? result.player_tracking[index]?.distance_meters ?? 0
+            ),
             faults: 0,
             winners: 0
           }))
