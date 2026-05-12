@@ -15,6 +15,7 @@ import { CourtPreview } from "@/components/CourtPreview";
 import { PageHeader } from "@/components/PageHeader";
 import { Screen } from "@/components/Screen";
 import { colors } from "@/constants/theme";
+import { BackendCalibrationSuggestion, suggestCourtCalibration } from "@/services/backendApi";
 import { useMatchStore } from "@/store/matchStore";
 import { CalibrationPoint } from "@/types/match";
 
@@ -30,7 +31,10 @@ export default function CalibrationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getMatch, selectMatch, setCalibrationPoints, setMatchStatus } = useMatchStore();
   const match = getMatch(id);
+  const [calibrationSuggestion, setCalibrationSuggestion] =
+    useState<BackendCalibrationSuggestion | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isSuggesting, setIsSuggesting] = useState(false);
 
   if (!match) {
     return (
@@ -54,7 +58,35 @@ export default function CalibrationScreen() {
 
   function handleReset() {
     setError(null);
+    setCalibrationSuggestion(null);
     setCalibrationPoints(currentMatch.id, []);
+  }
+
+  async function handleSuggestCalibration() {
+    if (!currentMatch.video) {
+      setError("Importe une video avant de demander une suggestion de calibration.");
+      return;
+    }
+
+    try {
+      setError(null);
+      setIsSuggesting(true);
+      const suggestion = await suggestCourtCalibration(currentMatch.video);
+      setCalibrationSuggestion(suggestion);
+      setCalibrationPoints(
+        currentMatch.id,
+        suggestion.points.map((point, index) => ({
+          id: point.id || `calibration-${index + 1}`,
+          label: point.label || calibrationLabels[index],
+          x: point.x,
+          y: point.y
+        }))
+      );
+    } catch (suggestionError) {
+      setError(getErrorMessage(suggestionError));
+    } finally {
+      setIsSuggesting(false);
+    }
   }
 
   function handleValidate() {
@@ -93,6 +125,12 @@ export default function CalibrationScreen() {
         />
         <YStack gap="$2">
           <Text style={{ color: colors.ink, fontSize: 18, fontWeight: "900" }}>Points terrain</Text>
+          {calibrationSuggestion ? (
+            <Text style={{ color: colors.inkMuted, fontSize: 14, lineHeight: 20 }}>
+              Suggestion {Math.round(calibrationSuggestion.confidence * 100)}% via{" "}
+              {calibrationSuggestion.method}.
+            </Text>
+          ) : null}
           {calibrationLabels.map((label, index) => (
             <Text key={label} style={{ color: colors.inkMuted, fontSize: 15 }}>
               {index + 1}. {label} {points[index] ? "ok" : ""}
@@ -104,6 +142,14 @@ export default function CalibrationScreen() {
       {error ? <Text style={{ color: colors.danger, fontWeight: "800" }}>{error}</Text> : null}
 
       <XStack flexWrap="wrap" gap="$3">
+        <Button
+          disabled={isSuggesting}
+          icon="sparkles-outline"
+          variant="secondary"
+          onPress={handleSuggestCalibration}
+        >
+          {isSuggesting ? "Suggestion..." : "Suggerer les coins"}
+        </Button>
         <Button icon="checkmark-circle-outline" onPress={handleValidate}>
           Valider la calibration
         </Button>
@@ -417,6 +463,14 @@ function getContainedSurfaceSize({
     width: maxHeight * aspectRatio,
     height: maxHeight
   };
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Impossible de proposer une calibration automatiquement.";
 }
 
 const styles = StyleSheet.create({

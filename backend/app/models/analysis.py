@@ -27,6 +27,13 @@ class CalibrationPointInput(BaseModel):
     y: float = Field(ge=0, le=1)
 
 
+class CalibrationSuggestion(BaseModel):
+    points: list[CalibrationPointInput]
+    confidence: float = Field(ge=0, le=1)
+    method: str
+    frame_time_seconds: float
+
+
 class PlayerInput(BaseModel):
     id: str
     label: str

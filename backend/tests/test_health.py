@@ -52,6 +52,21 @@ def test_create_analysis_with_match_metadata(tmp_path: Path) -> None:
     assert result["player_tracking"][0]["player_id"] == "match-1-p1"
 
 
+def test_suggest_calibration_from_video(tmp_path: Path) -> None:
+    video_path = create_sample_video(tmp_path)
+
+    response = client.post(
+        "/api/calibration/suggestions",
+        files={"video": ("match.avi", video_path.read_bytes(), "video/x-msvideo")},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload["points"]) == 4
+    assert payload["points"][0]["label"] == "Coin arriere gauche"
+    assert 0 <= payload["confidence"] <= 1
+
+
 def create_sample_video(tmp_path: Path) -> Path:
     path = tmp_path / "sample.avi"
     writer = cv2.VideoWriter(

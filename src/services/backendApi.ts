@@ -47,21 +47,25 @@ type StartAnalysisInput = {
   video: MatchVideo;
 };
 
+export type BackendCalibrationSuggestion = {
+  points: {
+    id: string;
+    label: string;
+    x: number;
+    y: number;
+  }[];
+  confidence: number;
+  method: string;
+  frame_time_seconds: number;
+};
+
 export async function startVideoAnalysis(input: StartAnalysisInput): Promise<BackendAnalysisJob> {
   const formData = new FormData();
-  const fileName = input.video.fileName ?? "padel-video.mp4";
-  const mimeType = input.video.mimeType ?? "video/mp4";
-  const videoPayload = await createVideoPayload(input.video.uri, fileName, mimeType);
 
   formData.append("match_id", input.matchId);
   formData.append("calibration_points", JSON.stringify(input.calibrationPoints));
   formData.append("players", JSON.stringify(input.players));
-
-  if (Platform.OS === "web") {
-    formData.append("video", videoPayload, fileName);
-  } else {
-    formData.append("video", videoPayload);
-  }
+  await appendVideo(formData, input.video);
 
   return request<BackendAnalysisJob>("/api/analyses", {
     method: "POST",
@@ -75,6 +79,30 @@ export async function getAnalysisJob(analysisId: string): Promise<BackendAnalysi
 
 export async function getAnalysisResult(analysisId: string): Promise<BackendAnalysisResult> {
   return request<BackendAnalysisResult>(`/api/analyses/${analysisId}/result`);
+}
+
+export async function suggestCourtCalibration(
+  video: MatchVideo
+): Promise<BackendCalibrationSuggestion> {
+  const formData = new FormData();
+  await appendVideo(formData, video);
+
+  return request<BackendCalibrationSuggestion>("/api/calibration/suggestions", {
+    method: "POST",
+    body: formData
+  });
+}
+
+async function appendVideo(formData: FormData, video: MatchVideo) {
+  const fileName = video.fileName ?? "padel-video.mp4";
+  const mimeType = video.mimeType ?? "video/mp4";
+  const videoPayload = await createVideoPayload(video.uri, fileName, mimeType);
+
+  if (Platform.OS === "web") {
+    formData.append("video", videoPayload, fileName);
+  } else {
+    formData.append("video", videoPayload);
+  }
 }
 
 async function createVideoPayload(uri: string, name: string, type: string): Promise<Blob> {

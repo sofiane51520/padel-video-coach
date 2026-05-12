@@ -27,6 +27,7 @@ uvicorn app.main:app --reload --port 8000
 ```text
 GET  /health
 POST /api/analyses
+POST /api/calibration/suggestions
 GET  /api/analyses/{analysis_id}
 GET  /api/analyses/{analysis_id}/result
 ```
@@ -37,6 +38,8 @@ GET  /api/analyses/{analysis_id}/result
 - `match_id` : identifiant du match cote app.
 - `calibration_points` : tableau JSON des points terrain normalises.
 - `players` : tableau JSON des joueurs identifies dans l'app.
+
+`POST /api/calibration/suggestions` reçoit une video et propose quatre coins de terrain normalises. La suggestion est une aide : elle reste corrigeable dans l'app.
 
 Le traitement est simule pour le moment. La prochaine etape sera de remplacer `app/services/analysis_service.py` par un pipeline OpenCV/YOLO.
 Le backend lit deja la video avec OpenCV pour extraire les metadonnees et une frame par seconde dans `.data/frames`.

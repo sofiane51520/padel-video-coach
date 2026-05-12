@@ -3,8 +3,14 @@ import json
 from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile, status
 from pydantic import ValidationError
 
-from app.models.analysis import AnalysisJob, AnalysisMetadata, AnalysisResult
+from app.models.analysis import (
+    AnalysisJob,
+    AnalysisMetadata,
+    AnalysisResult,
+    CalibrationSuggestion,
+)
 from app.services.analysis_service import analysis_service
+from app.services.calibration_suggestion import calibration_suggestion_service
 from app.services.video_storage import video_storage
 
 router = APIRouter()
@@ -54,6 +60,19 @@ async def get_analysis_result(analysis_id: str) -> AnalysisResult:
         )
 
     return result
+
+
+@router.post("/calibration/suggestions", response_model=CalibrationSuggestion)
+async def suggest_calibration(video: UploadFile = File(...)) -> CalibrationSuggestion:
+    stored_video = await video_storage.save(video)
+
+    try:
+        return calibration_suggestion_service.suggest(stored_video)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
 
 
 def parse_analysis_metadata(
