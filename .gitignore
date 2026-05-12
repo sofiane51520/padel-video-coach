@@ -4,6 +4,7 @@ node_modules/
 dist/
 web-build/
 *.log
+*.pt
 .env
 .env.*
 !.env.example

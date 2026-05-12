@@ -37,6 +37,6 @@ GET  /api/analyses/{analysis_id}/result
 - `match_id` : identifiant du match cote app.
 - `players` : tableau JSON des joueurs identifies dans l'app.
 
-Le traitement est simule pour le moment. La prochaine etape sera de remplacer `app/services/analysis_service.py` par un pipeline OpenCV/YOLO.
+Le traitement est simule pour le moment. La prochaine etape sera d'affiner le pipeline OpenCV/YOLO avec un modele specialise padel/tennis.
 Le backend lit deja la video avec OpenCV pour extraire les metadonnees et une frame par seconde dans `.data/frames`.
-Les echanges proposes sont detectes depuis l'activite observee dans la video, au lieu d'etre repartis artificiellement sur la duree totale.
+Les echanges proposes sont detectes avec YOLO (`person` et `sports ball`) combine a l'activite observee dans la video. Si le modele n'est pas disponible, le backend retombe sur le detecteur OpenCV.

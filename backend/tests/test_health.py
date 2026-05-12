@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.models.analysis import StoredVideo
-from app.services.rally_detection import rally_detection_service
+from app.services.rally_detection import RallyDetectionService
 from app.services.video_probe import video_probe_service
 
 
@@ -65,7 +65,8 @@ def test_detects_rallies_from_video_activity(tmp_path: Path) -> None:
     )
     video_probe = video_probe_service.probe(stored_video)
 
-    rallies = rally_detection_service.detect(stored_video, video_probe)
+    detector = RallyDetectionService(model_enabled=False)
+    rallies = detector.detect(stored_video, video_probe)
 
     assert len(rallies) == 2
     assert rallies[0].start_time == "00:00"

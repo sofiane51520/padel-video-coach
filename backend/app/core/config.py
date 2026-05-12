@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     )
     upload_dir: Path = Path(".data/uploads")
     frame_dir: Path = Path(".data/frames")
+    model_dir: Path = Path(".data/models")
+    yolo_enabled: bool = True
+    yolo_model_name: str = "yolo11n.pt"
+    yolo_model_path: Path = Path(".data/models/yolo11n.pt")
+    yolo_confidence: float = 0.25
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -33,6 +38,7 @@ def get_settings() -> Settings:
     settings = Settings()
     settings.upload_dir.mkdir(parents=True, exist_ok=True)
     settings.frame_dir.mkdir(parents=True, exist_ok=True)
+    settings.model_dir.mkdir(parents=True, exist_ok=True)
     return settings
 
 

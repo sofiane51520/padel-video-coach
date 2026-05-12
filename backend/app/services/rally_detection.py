@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import cv2
 import numpy as np
 
+from app.core.config import settings
 from app.models.analysis import RallySuggestion, StoredVideo, VideoProbe
 
 
@@ -11,6 +13,14 @@ from app.models.analysis import RallySuggestion, StoredVideo, VideoProbe
 class ActivitySample:
     timestamp_seconds: float
     score: float
+
+
+@dataclass(frozen=True)
+class DetectionStats:
+    player_count: int
+    ball_count: int
+    max_player_confidence: float
+    max_ball_confidence: float
 
 
 @dataclass(frozen=True)
@@ -24,9 +34,27 @@ class RallyDetectionService:
     min_rally_seconds = 2.0
     max_inactive_gap_seconds = 1.5
     edge_padding_seconds = 0.8
+    yolo_classes = (0, 32)
+
+    def __init__(
+        self,
+        model_enabled: bool = settings.yolo_enabled,
+        model_path: Path = settings.yolo_model_path,
+        model_name: str = settings.yolo_model_name,
+        model_confidence: float = settings.yolo_confidence,
+    ) -> None:
+        self.model_enabled = model_enabled
+        self.model_path = model_path
+        self.model_name = model_name
+        self.model_confidence = model_confidence
+        self._model: Any | None = None
+        self._model_load_failed = False
 
     def detect(self, stored_video: StoredVideo, video_probe: VideoProbe) -> list[RallySuggestion]:
-        samples = self._sample_activity(stored_video.path, video_probe)
+        samples = self._sample_model_activity(stored_video.path, video_probe)
+
+        if not samples:
+            samples = self._sample_motion_activity(stored_video.path, video_probe)
 
         if not samples:
             return self._single_rally(video_probe)
@@ -46,7 +74,61 @@ class RallyDetectionService:
             for index, segment in enumerate(segments)
         ]
 
-    def _sample_activity(self, video_path: Path, video_probe: VideoProbe) -> list[ActivitySample]:
+    def _sample_model_activity(
+        self,
+        video_path: Path,
+        video_probe: VideoProbe,
+    ) -> list[ActivitySample]:
+        model = self._load_model()
+
+        if model is None:
+            return []
+
+        capture = cv2.VideoCapture(str(video_path))
+
+        if not capture.isOpened() or video_probe.fps <= 0:
+            return []
+
+        frame_step = max(1, round(video_probe.fps / self.sample_rate_fps))
+        previous_frame: np.ndarray | None = None
+        samples: list[ActivitySample] = []
+        detected_objects = 0
+
+        try:
+            frame_index = 0
+
+            while frame_index < video_probe.frame_count:
+                capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+                success, frame = capture.read()
+
+                if not success:
+                    break
+
+                prepared_frame = self._prepare_frame(frame)
+                timestamp_seconds = frame_index / video_probe.fps
+                motion_score = (
+                    0 if previous_frame is None else self._motion_score(previous_frame, prepared_frame)
+                )
+                stats = self._detect_objects(model, frame)
+                detected_objects += stats.player_count + stats.ball_count
+                samples.append(
+                    ActivitySample(
+                        timestamp_seconds=timestamp_seconds,
+                        score=self._ai_activity_score(motion_score, stats),
+                    )
+                )
+                previous_frame = prepared_frame
+                frame_index += frame_step
+        finally:
+            capture.release()
+
+        return samples if detected_objects > 0 else []
+
+    def _sample_motion_activity(
+        self,
+        video_path: Path,
+        video_probe: VideoProbe,
+    ) -> list[ActivitySample]:
         capture = cv2.VideoCapture(str(video_path))
 
         if not capture.isOpened() or video_probe.fps <= 0:
@@ -81,6 +163,82 @@ class RallyDetectionService:
             capture.release()
 
         return samples
+
+    def _load_model(self) -> Any | None:
+        if not self.model_enabled or self._model_load_failed:
+            return None
+
+        if self._model is not None:
+            return self._model
+
+        try:
+            from ultralytics import YOLO
+
+            if self.model_path.exists():
+                self._model = YOLO(str(self.model_path))
+            else:
+                self._model = YOLO(self.model_name)
+        except Exception:
+            self._model_load_failed = True
+            return None
+
+        return self._model
+
+    def _detect_objects(self, model: Any, frame: np.ndarray) -> DetectionStats:
+        results = model.predict(
+            frame,
+            classes=list(self.yolo_classes),
+            conf=self.model_confidence,
+            verbose=False,
+        )
+
+        if not results:
+            return DetectionStats(
+                player_count=0,
+                ball_count=0,
+                max_player_confidence=0,
+                max_ball_confidence=0,
+            )
+
+        boxes = getattr(results[0], "boxes", None)
+
+        if boxes is None or boxes.cls is None or boxes.conf is None:
+            return DetectionStats(
+                player_count=0,
+                ball_count=0,
+                max_player_confidence=0,
+                max_ball_confidence=0,
+            )
+
+        classes = boxes.cls.cpu().numpy().astype(int)
+        confidences = boxes.conf.cpu().numpy()
+        player_confidences = confidences[classes == 0]
+        ball_confidences = confidences[classes == 32]
+
+        return DetectionStats(
+            player_count=int(player_confidences.size),
+            ball_count=int(ball_confidences.size),
+            max_player_confidence=self._max_confidence(player_confidences),
+            max_ball_confidence=self._max_confidence(ball_confidences),
+        )
+
+    def _ai_activity_score(self, motion_score: float, stats: DetectionStats) -> float:
+        if stats.ball_count > 0:
+            return motion_score * 2 + stats.max_ball_confidence * 0.05
+
+        if stats.player_count >= 2:
+            return motion_score * 1.4 + stats.max_player_confidence * 0.004
+
+        if stats.player_count == 1:
+            return motion_score
+
+        return motion_score * 0.35
+
+    def _max_confidence(self, confidences: np.ndarray) -> float:
+        if confidences.size == 0:
+            return 0
+
+        return float(np.max(confidences))
 
     def _prepare_frame(self, frame: np.ndarray) -> np.ndarray:
         resized = cv2.resize(frame, (320, 180), interpolation=cv2.INTER_AREA)
