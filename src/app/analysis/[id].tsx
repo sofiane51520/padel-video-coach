@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { type Href, router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Text, XStack, YStack } from "tamagui";
 import { Button } from "@/components/Button";
@@ -228,6 +228,14 @@ function AnalysisContent({
       {error ? <Text style={{ color: colors.danger, fontWeight: "800" }}>{error}</Text> : null}
 
       <XStack flexWrap="wrap" gap="$3">
+        <Button
+          disabled={!isCompleted}
+          href={{ pathname: "/rallies/[id]", params: { id: currentMatch.id } } as unknown as Href}
+          icon="videocam-outline"
+          variant="secondary"
+        >
+          Verifier le decoupage
+        </Button>
         <Button disabled={!isCompleted} icon="list-outline" onPress={handleOpenReview}>
           Aller a la revue
         </Button>

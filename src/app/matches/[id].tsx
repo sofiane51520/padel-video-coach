@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { type Href, useLocalSearchParams } from "expo-router";
 import { useEffect } from "react";
 import { Text, XStack, YStack } from "tamagui";
 import { Badge } from "@/components/Badge";
@@ -70,6 +70,13 @@ export default function MatchDetailScreen() {
         </Button>
         <Button href="/review" icon="list-outline" variant="secondary">
           Revue
+        </Button>
+        <Button
+          href={{ pathname: "/rallies/[id]", params: { id: match.id } } as unknown as Href}
+          icon="videocam-outline"
+          variant="secondary"
+        >
+          Decoupage
         </Button>
         <Button href="/report" icon="stats-chart-outline" variant="secondary">
           Rapport

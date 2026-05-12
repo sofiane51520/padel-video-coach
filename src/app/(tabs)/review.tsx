@@ -1,4 +1,6 @@
+import { type Href } from "expo-router";
 import { Text, XStack } from "tamagui";
+import { Button } from "@/components/Button";
 import { PageHeader } from "@/components/PageHeader";
 import { RallyDecisionCard } from "@/components/RallyDecisionCard";
 import { Screen } from "@/components/Screen";
@@ -34,6 +36,7 @@ export default function ReviewScreen() {
       />
 
       <XStack
+        flexWrap="wrap"
         gap="$2"
         style={{
           backgroundColor: colors.surface,
@@ -46,6 +49,15 @@ export default function ReviewScreen() {
       >
         <Text style={{ color: colors.ink, fontSize: 28, fontWeight: "900" }}>{completion}</Text>
         <Text style={{ color: colors.inkMuted, fontWeight: "800" }}>echanges tagues</Text>
+        <Button
+          disabled={!currentMatch.video}
+          href={{ pathname: "/rallies/[id]", params: { id: currentMatch.id } } as unknown as Href}
+          icon="videocam-outline"
+          variant="secondary"
+          style={{ marginLeft: "auto" }}
+        >
+          Verifier decoupage
+        </Button>
       </XStack>
 
       {currentMatch.rallies.map((rally) => (

@@ -32,6 +32,7 @@ export default function RootLayout() {
           <Stack.Screen name="matches/[id]" options={{ title: "Match" }} />
           <Stack.Screen name="players/[id]" options={{ title: "Joueurs" }} />
           <Stack.Screen name="analysis/[id]" options={{ title: "Analyse" }} />
+          <Stack.Screen name="rallies/[id]" options={{ title: "Decoupage" }} />
         </Stack>
         <StatusBar style="dark" />
       </MatchStoreProvider>
