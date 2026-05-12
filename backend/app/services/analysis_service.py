@@ -8,10 +8,10 @@ from app.models.analysis import (
     AnalysisResult,
     AnalysisStatus,
     PlayerTrackingSummary,
-    RallySuggestion,
     StoredVideo,
     VideoProbe,
 )
+from app.services.rally_generation import rally_generation_service
 from app.services.video_probe import video_probe_service
 
 
@@ -117,12 +117,7 @@ class AnalysisService:
                 PlayerTrackingSummary(player_id=player_id, distance_meters=0)
                 for player_id in player_ids
             ],
-            rallies=[
-                RallySuggestion(id="r1", index=1, start_time="00:12", end_time="00:38"),
-                RallySuggestion(id="r2", index=2, start_time="00:52", end_time="01:21"),
-                RallySuggestion(id="r3", index=3, start_time="01:36", end_time="02:03"),
-                RallySuggestion(id="r4", index=4, start_time="02:18", end_time="02:49"),
-            ],
+            rallies=rally_generation_service.generate(video_probe),
         )
 
 

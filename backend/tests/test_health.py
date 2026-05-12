@@ -46,6 +46,9 @@ def test_create_analysis_with_match_metadata(tmp_path: Path) -> None:
     assert result["video_probe"]["fps"] == 2
     assert len(result["video_probe"]["extracted_frames"]) >= 2
     assert result["player_tracking"][0]["player_id"] == "match-1-p1"
+    assert len(result["rallies"]) == 1
+    assert result["rallies"][0]["start_time"] == "00:00"
+    assert result["rallies"][0]["end_time"] == "00:02"
 
 
 def create_sample_video(tmp_path: Path) -> Path:
