@@ -83,7 +83,6 @@ function AnalysisContent({
       try {
         setError(null);
         const job = await startVideoAnalysis({
-          calibrationPoints: currentMatch.calibrationPoints ?? [],
           matchId: currentMatch.id,
           players: currentMatch.players,
           video: analysisVideo
@@ -112,7 +111,6 @@ function AnalysisContent({
     };
   }, [
     analysisId,
-    currentMatch.calibrationPoints,
     currentMatch.id,
     currentMatch.players,
     currentMatch.video,
@@ -185,7 +183,7 @@ function AnalysisContent({
       <PageHeader
         eyebrow={currentMatch.title}
         title="Analyse video"
-        description="Suivi du traitement, du tracking joueurs et du calcul de distance."
+        description="Suivi du traitement, du tracking joueurs et du calcul de distance estimee."
       />
 
       <YStack

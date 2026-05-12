@@ -5,7 +5,6 @@ Squelette Expo pour une application cross-platform web, iOS et Android qui analy
 ## MVP
 
 - Import d'une video depuis le telephone ou le web.
-- Calibration du terrain.
 - Identification des 4 joueurs.
 - Analyse automatique preparee cote backend.
 - Revue des echanges avec deux labels uniquement :
@@ -17,7 +16,6 @@ Squelette Expo pour une application cross-platform web, iOS et Android qui analy
 
 - L'import video cree un vrai match dans le store applicatif.
 - Le match nouvellement cree devient le match actif.
-- La calibration permet de placer les quatre coins du terrain.
 - Les noms des joueurs sont modifiables.
 - La revue enregistre les fautes et points gagnants sur le match actif.
 - Le rapport recalcule les fautes et points gagnants depuis les tags.
@@ -91,7 +89,6 @@ src/app
     review.tsx
     report.tsx
   analysis/[id].tsx
-  calibration/[id].tsx
   matches/[id].tsx
   players/[id].tsx
 

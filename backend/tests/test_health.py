@@ -24,10 +24,6 @@ def test_create_analysis_with_match_metadata(tmp_path: Path) -> None:
         "/api/analyses",
         data={
             "match_id": "match-1",
-            "calibration_points": (
-                '[{"id":"back-left","label":"Fond gauche","courtX":0,"courtY":1,"x":0.1,"y":0.2},'
-                '{"id":"back-right","label":"Fond droit","courtX":1,"courtY":1,"x":0.9,"y":0.2}]'
-            ),
             "players": (
                 '[{"id":"match-1-p1","label":"Joueur 1","team":"A"},'
                 '{"id":"match-1-p2","label":"Joueur 2","team":"A"}]'
@@ -50,21 +46,6 @@ def test_create_analysis_with_match_metadata(tmp_path: Path) -> None:
     assert result["video_probe"]["fps"] == 2
     assert len(result["video_probe"]["extracted_frames"]) >= 2
     assert result["player_tracking"][0]["player_id"] == "match-1-p1"
-
-
-def test_suggest_calibration_from_video(tmp_path: Path) -> None:
-    video_path = create_sample_video(tmp_path)
-
-    response = client.post(
-        "/api/calibration/suggestions",
-        files={"video": ("match.avi", video_path.read_bytes(), "video/x-msvideo")},
-    )
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert len(payload["points"]) == 4
-    assert payload["points"][0]["label"] == "Fond gauche"
-    assert 0 <= payload["confidence"] <= 1
 
 
 def create_sample_video(tmp_path: Path) -> Path:

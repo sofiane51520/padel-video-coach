@@ -1,4 +1,4 @@
-export type MatchStatus = "draft" | "calibration" | "analysis" | "review" | "completed";
+export type MatchStatus = "draft" | "analysis" | "review" | "completed";
 
 export type Player = {
   id: string;
@@ -39,15 +39,6 @@ export type VideoProbe = {
   extractedFrames: ExtractedFrame[];
 };
 
-export type CalibrationPoint = {
-  id: string;
-  label: string;
-  courtX?: number;
-  courtY?: number;
-  x: number;
-  y: number;
-};
-
 export type RallyLabel = "fault" | "winner";
 
 export type RallyDecision = {
@@ -82,7 +73,6 @@ export type Match = {
   analysisJob?: MatchAnalysisJob;
   video?: MatchVideo;
   videoProbe?: VideoProbe;
-  calibrationPoints?: CalibrationPoint[];
   players: Player[];
   rallies: Rally[];
   stats: PlayerStats[];

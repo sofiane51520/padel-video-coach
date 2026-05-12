@@ -31,7 +31,6 @@ export default function MatchDetailScreen() {
     );
   }
 
-  const calibrationDone = (match.calibrationPoints?.length ?? 0) >= 4;
   const taggedRallies = getTaggedRallyCount(match);
 
   return (
@@ -57,19 +56,15 @@ export default function MatchDetailScreen() {
           <Badge tone="warning">{statusLabel(match.status)}</Badge>
           <Text style={{ color: colors.ink, fontSize: 21, fontWeight: "900" }}>Analyse du match</Text>
           <Text style={{ color: colors.inkMuted, fontSize: 15, lineHeight: 22 }}>
-            Calibration, joueurs, revue des echanges et rapport final.
+            Joueurs, analyse video, revue des echanges et rapport final.
           </Text>
         </YStack>
       </YStack>
 
       <XStack flexWrap="wrap" gap="$3">
-        <Button href={{ pathname: "/calibration/[id]", params: { id: match.id } }} icon="scan-outline">
-          Calibrer
-        </Button>
         <Button
           href={{ pathname: "/players/[id]", params: { id: match.id } }}
           icon="people-outline"
-          variant="secondary"
         >
           Joueurs
         </Button>
@@ -89,14 +84,14 @@ export default function MatchDetailScreen() {
             done: Boolean(match.video)
           },
           {
-            title: "Terrain calibre",
-            description: "Les reperes servent a transformer les positions en metres.",
-            done: calibrationDone
-          },
-          {
             title: "Joueurs assignes",
             description: "Chaque track IA est rattache a un joueur lisible.",
             done: match.players.every((player) => player.label.trim().length > 0)
+          },
+          {
+            title: "Distance estimee",
+            description: "Le tracking calcule une distance approximative sans etape manuelle.",
+            done: Boolean(match.videoProbe)
           },
           {
             title: "Echanges a taguer",

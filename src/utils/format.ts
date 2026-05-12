@@ -10,8 +10,6 @@ export function statusLabel(status: string): string {
   switch (status) {
     case "draft":
       return "Brouillon";
-    case "calibration":
-      return "Calibration";
     case "analysis":
       return "Analyse";
     case "review":

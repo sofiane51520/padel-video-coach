@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import AliasChoices, BaseModel, Field
+from pydantic import BaseModel, Field
 
 
 class AnalysisStatus(StrEnum):
@@ -20,32 +20,6 @@ class StoredVideo(BaseModel):
     size_bytes: int
 
 
-class CalibrationPointInput(BaseModel):
-    id: str
-    label: str
-    court_x: float | None = Field(
-        default=None,
-        ge=0,
-        le=1,
-        validation_alias=AliasChoices("court_x", "courtX"),
-    )
-    court_y: float | None = Field(
-        default=None,
-        ge=0,
-        le=1,
-        validation_alias=AliasChoices("court_y", "courtY"),
-    )
-    x: float = Field(ge=0, le=1)
-    y: float = Field(ge=0, le=1)
-
-
-class CalibrationSuggestion(BaseModel):
-    points: list[CalibrationPointInput]
-    confidence: float = Field(ge=0, le=1)
-    method: str
-    frame_time_seconds: float
-
-
 class PlayerInput(BaseModel):
     id: str
     label: str
@@ -53,7 +27,6 @@ class PlayerInput(BaseModel):
 
 
 class AnalysisMetadata(BaseModel):
-    calibration_points: list[CalibrationPointInput] = Field(default_factory=list)
     players: list[PlayerInput] = Field(default_factory=list)
 
 

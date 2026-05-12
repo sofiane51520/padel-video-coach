@@ -49,7 +49,7 @@ export default function UploadScreen() {
 
       setError(null);
       setVideo(pickedVideo);
-      router.push({ pathname: "/calibration/[id]", params: { id: matchId } });
+      router.push({ pathname: "/players/[id]", params: { id: matchId } });
     }
   }
 
@@ -114,7 +114,7 @@ export default function UploadScreen() {
             {video.uri}
           </Text>
           <Text style={{ color: colors.inkMuted, fontSize: 13 }}>
-            Match cree. Ouverture de la calibration...
+            Match cree. Ouverture de l&apos;identification des joueurs...
           </Text>
         </YStack>
       ) : null}

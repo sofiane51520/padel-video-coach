@@ -25,7 +25,7 @@ export default function ReportScreen() {
       <PageHeader
         eyebrow="Rapport"
         title="Statistiques par joueur"
-        description="Distance parcourue, fautes directes et points gagnants."
+        description="Distance estimee, fautes directes et points gagnants."
       />
 
       {stats.map((stat) => {
@@ -42,7 +42,7 @@ export default function ReportScreen() {
             </XStack>
             <XStack flexWrap="wrap" gap="$3">
               <StatTile
-                label="Distance"
+                label="Distance estimee"
                 value={formatDistance(stat.distanceMeters)}
                 accent={player.color}
               />

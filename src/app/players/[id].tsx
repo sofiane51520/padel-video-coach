@@ -74,7 +74,7 @@ export default function PlayersScreen() {
           Lancer analyse
         </Button>
         <Button
-          href={{ pathname: "/calibration/[id]", params: { id: currentMatch.id } }}
+          href={{ pathname: "/matches/[id]", params: { id: currentMatch.id } }}
           icon="arrow-back-outline"
           variant="secondary"
         >

@@ -93,13 +93,13 @@ export default function MatchesScreen() {
             done: true
           },
           {
-            title: "Calibrer",
-            description: "Cliquer quatre reperes visibles du terrain pour convertir les pixels en metres.",
+            title: "Identifier",
+            description: "Nommer les quatre joueurs et verifier les equipes.",
             done: true
           },
           {
-            title: "Identifier",
-            description: "Nommer les quatre joueurs et verifier les equipes.",
+            title: "Analyser",
+            description: "Lancer le tracking et calculer une distance estimee.",
             done: true
           },
           {

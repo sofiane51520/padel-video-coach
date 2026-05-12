@@ -7,10 +7,8 @@ from app.models.analysis import (
     AnalysisJob,
     AnalysisMetadata,
     AnalysisResult,
-    CalibrationSuggestion,
 )
 from app.services.analysis_service import analysis_service
-from app.services.calibration_suggestion import calibration_suggestion_service
 from app.services.video_storage import video_storage
 
 router = APIRouter()
@@ -25,11 +23,10 @@ async def create_analysis(
     background_tasks: BackgroundTasks,
     video: UploadFile = File(...),
     match_id: str | None = Form(default=None),
-    calibration_points: str | None = Form(default=None),
     players: str | None = Form(default=None),
 ) -> AnalysisJob:
     stored_video = await video_storage.save(video)
-    metadata = parse_analysis_metadata(calibration_points=calibration_points, players=players)
+    metadata = parse_analysis_metadata(players=players)
     job = analysis_service.create_job(
         stored_video=stored_video,
         match_id=match_id,
@@ -62,27 +59,10 @@ async def get_analysis_result(analysis_id: str) -> AnalysisResult:
     return result
 
 
-@router.post("/calibration/suggestions", response_model=CalibrationSuggestion)
-async def suggest_calibration(video: UploadFile = File(...)) -> CalibrationSuggestion:
-    stored_video = await video_storage.save(video)
-
-    try:
-        return calibration_suggestion_service.suggest(stored_video)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc),
-        ) from exc
-
-
-def parse_analysis_metadata(
-    calibration_points: str | None,
-    players: str | None,
-) -> AnalysisMetadata:
+def parse_analysis_metadata(players: str | None) -> AnalysisMetadata:
     try:
         return AnalysisMetadata.model_validate(
             {
-                "calibration_points": parse_json_list(calibration_points, "calibration_points"),
                 "players": parse_json_list(players, "players"),
             }
         )

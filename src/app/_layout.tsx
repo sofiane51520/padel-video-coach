@@ -30,7 +30,6 @@ export default function RootLayout() {
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="matches/[id]" options={{ title: "Match" }} />
-          <Stack.Screen name="calibration/[id]" options={{ title: "Calibration" }} />
           <Stack.Screen name="players/[id]" options={{ title: "Joueurs" }} />
           <Stack.Screen name="analysis/[id]" options={{ title: "Analyse" }} />
         </Stack>

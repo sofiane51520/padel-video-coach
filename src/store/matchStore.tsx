@@ -2,7 +2,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { matches as seedMatches, players as seedPlayers } from "@/data/mockMatches";
 import {
-  CalibrationPoint,
   Match,
   MatchAnalysisJob,
   MatchStatus,
@@ -44,7 +43,6 @@ type MatchStore = {
   resetLocalData: () => void;
   selectMatch: (id: string) => void;
   setAnalysisJob: (matchId: string, analysisJob: MatchAnalysisJob) => void;
-  setCalibrationPoints: (matchId: string, points: CalibrationPoint[]) => void;
   setMatchStatus: (matchId: string, status: MatchStatus) => void;
   setRallyDecision: (matchId: string, rallyId: string, playerId: string, label: RallyLabel) => void;
   updatePlayerLabel: (matchId: string, playerId: string, label: string) => void;
@@ -85,7 +83,7 @@ export function MatchStoreProvider({ children }: { children: ReactNode }) {
           const parsedValue = JSON.parse(storedValue) as PersistedMatchStore;
 
           if (Array.isArray(parsedValue.matches) && parsedValue.matches.length > 0) {
-            setMatches(parsedValue.matches);
+            setMatches(parsedValue.matches.map(normalizePersistedMatch));
             setActiveMatchId(parsedValue.activeMatchId ?? parsedValue.matches[0].id);
           }
         }
@@ -182,9 +180,8 @@ export function MatchStoreProvider({ children }: { children: ReactNode }) {
           venue: "Terrain a renseigner",
           recordedAt: new Date().toISOString(),
           duration: formatDuration(durationMs),
-          status: "calibration",
+          status: "draft",
           video,
-          calibrationPoints: [],
           players: defaultPlayers,
           rallies: createStarterRallies(id, durationMs),
           stats: defaultPlayers.map((player) => ({
@@ -221,13 +218,6 @@ export function MatchStoreProvider({ children }: { children: ReactNode }) {
           ...match,
           analysisJob,
           status: analysisJob.status === "completed" ? match.status : "analysis"
-        }));
-      },
-      setCalibrationPoints(matchId, points) {
-        updateMatch(matchId, (match) => ({
-          ...match,
-          calibrationPoints: points,
-          status: points.length >= 4 ? "draft" : "calibration"
         }));
       },
       setMatchStatus(matchId, status) {
@@ -284,6 +274,19 @@ function createId(prefix: string): string {
       : `${Date.now()}-${Math.round(Math.random() * 1_000_000)}`;
 
   return `${prefix}-${randomId}`;
+}
+
+function normalizePersistedMatch(match: Match): Match {
+  const validStatuses: MatchStatus[] = ["draft", "analysis", "review", "completed"];
+
+  if (validStatuses.includes(match.status)) {
+    return match;
+  }
+
+  return {
+    ...match,
+    status: "draft"
+  };
 }
 
 function createDefaultPlayers(matchId: string): Player[] {

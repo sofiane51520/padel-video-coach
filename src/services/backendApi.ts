@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 
-import { AnalysisJobStatus, CalibrationPoint, MatchVideo, Player } from "@/types/match";
+import { AnalysisJobStatus, MatchVideo, Player } from "@/types/match";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -41,29 +41,15 @@ export type BackendAnalysisResult = {
 };
 
 type StartAnalysisInput = {
-  calibrationPoints: CalibrationPoint[];
   matchId: string;
   players: Player[];
   video: MatchVideo;
-};
-
-export type BackendCalibrationSuggestion = {
-  points: {
-    id: string;
-    label: string;
-    x: number;
-    y: number;
-  }[];
-  confidence: number;
-  method: string;
-  frame_time_seconds: number;
 };
 
 export async function startVideoAnalysis(input: StartAnalysisInput): Promise<BackendAnalysisJob> {
   const formData = new FormData();
 
   formData.append("match_id", input.matchId);
-  formData.append("calibration_points", JSON.stringify(input.calibrationPoints));
   formData.append("players", JSON.stringify(input.players));
   await appendVideo(formData, input.video);
 
@@ -79,18 +65,6 @@ export async function getAnalysisJob(analysisId: string): Promise<BackendAnalysi
 
 export async function getAnalysisResult(analysisId: string): Promise<BackendAnalysisResult> {
   return request<BackendAnalysisResult>(`/api/analyses/${analysisId}/result`);
-}
-
-export async function suggestCourtCalibration(
-  video: MatchVideo
-): Promise<BackendCalibrationSuggestion> {
-  const formData = new FormData();
-  await appendVideo(formData, video);
-
-  return request<BackendCalibrationSuggestion>("/api/calibration/suggestions", {
-    method: "POST",
-    body: formData
-  });
 }
 
 async function appendVideo(formData: FormData, video: MatchVideo) {
