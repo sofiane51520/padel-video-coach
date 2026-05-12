@@ -11,7 +11,7 @@ from app.models.analysis import (
     StoredVideo,
     VideoProbe,
 )
-from app.services.rally_generation import rally_generation_service
+from app.services.rally_detection import rally_detection_service
 from app.services.video_probe import video_probe_service
 
 
@@ -69,7 +69,7 @@ class AnalysisService:
                 analysis_id,
                 status=AnalysisStatus.processing,
                 progress=82,
-                message="Preparation des echanges",
+                message="Detection des echanges",
             )
             time.sleep(0.4)
 
@@ -117,7 +117,7 @@ class AnalysisService:
                 PlayerTrackingSummary(player_id=player_id, distance_meters=0)
                 for player_id in player_ids
             ],
-            rallies=rally_generation_service.generate(video_probe),
+            rallies=rally_detection_service.detect(job.video, video_probe),
         )
 
 

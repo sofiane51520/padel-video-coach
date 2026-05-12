@@ -39,4 +39,4 @@ GET  /api/analyses/{analysis_id}/result
 
 Le traitement est simule pour le moment. La prochaine etape sera de remplacer `app/services/analysis_service.py` par un pipeline OpenCV/YOLO.
 Le backend lit deja la video avec OpenCV pour extraire les metadonnees et une frame par seconde dans `.data/frames`.
-Les echanges proposes sont generes depuis la duree reelle de la video.
+Les echanges proposes sont detectes depuis l'activite observee dans la video, au lieu d'etre repartis artificiellement sur la duree totale.

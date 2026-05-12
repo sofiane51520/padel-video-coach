@@ -5,6 +5,9 @@ import numpy as np
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.models.analysis import StoredVideo
+from app.services.rally_detection import rally_detection_service
+from app.services.video_probe import video_probe_service
 
 
 client = TestClient(app)
@@ -51,6 +54,26 @@ def test_create_analysis_with_match_metadata(tmp_path: Path) -> None:
     assert result["rallies"][0]["end_time"] == "00:02"
 
 
+def test_detects_rallies_from_video_activity(tmp_path: Path) -> None:
+    video_path = create_activity_video(tmp_path)
+    stored_video = StoredVideo(
+        id="activity-video",
+        original_filename="activity.avi",
+        content_type="video/x-msvideo",
+        path=video_path,
+        size_bytes=video_path.stat().st_size,
+    )
+    video_probe = video_probe_service.probe(stored_video)
+
+    rallies = rally_detection_service.detect(stored_video, video_probe)
+
+    assert len(rallies) == 2
+    assert rallies[0].start_time == "00:00"
+    assert rallies[0].end_time == "00:04"
+    assert rallies[1].start_time == "00:04"
+    assert rallies[1].end_time == "00:08"
+
+
 def create_sample_video(tmp_path: Path) -> Path:
     path = tmp_path / "sample.avi"
     writer = cv2.VideoWriter(
@@ -62,6 +85,29 @@ def create_sample_video(tmp_path: Path) -> Path:
 
     for index in range(4):
         frame = np.full((180, 320, 3), index * 40, dtype=np.uint8)
+        writer.write(frame)
+
+    writer.release()
+    return path
+
+
+def create_activity_video(tmp_path: Path) -> Path:
+    path = tmp_path / "activity.avi"
+    fps = 4
+    writer = cv2.VideoWriter(
+        str(path),
+        cv2.VideoWriter_fourcc(*"MJPG"),
+        fps,
+        (320, 180),
+    )
+
+    for index in range(32):
+        frame = np.zeros((180, 320, 3), dtype=np.uint8)
+
+        if 4 <= index <= 12 or 20 <= index <= 28:
+            x = 40 + (index % 8) * 25
+            cv2.circle(frame, (x, 90), 18, (255, 255, 255), -1)
+
         writer.write(frame)
 
     writer.release()
