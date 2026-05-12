@@ -39,7 +39,7 @@ GET  /api/analyses/{analysis_id}/result
 - `calibration_points` : tableau JSON des points terrain normalises.
 - `players` : tableau JSON des joueurs identifies dans l'app.
 
-`POST /api/calibration/suggestions` reçoit une video et propose quatre coins de terrain normalises. La suggestion est une aide : elle reste corrigeable dans l'app.
+`POST /api/calibration/suggestions` reçoit une video et propose quatre reperes de terrain normalises. La suggestion est une aide : elle reste corrigeable dans l'app.
 
 Le traitement est simule pour le moment. La prochaine etape sera de remplacer `app/services/analysis_service.py` par un pipeline OpenCV/YOLO.
 Le backend lit deja la video avec OpenCV pour extraire les metadonnees et une frame par seconde dans `.data/frames`.

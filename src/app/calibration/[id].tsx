@@ -19,11 +19,24 @@ import { BackendCalibrationSuggestion, suggestCourtCalibration } from "@/service
 import { useMatchStore } from "@/store/matchStore";
 import { CalibrationPoint } from "@/types/match";
 
-const calibrationLabels = [
-  "Coin arriere gauche",
-  "Coin arriere droit",
-  "Coin avant droit",
-  "Coin avant gauche"
+type CalibrationReference = {
+  id: string;
+  label: string;
+  courtX: number;
+  courtY: number;
+};
+
+const minimumCalibrationPoints = 4;
+const maximumCalibrationPoints = 4;
+const calibrationReferences: CalibrationReference[] = [
+  { id: "back-left", label: "Fond gauche", courtX: 0, courtY: 1 },
+  { id: "back-right", label: "Fond droit", courtX: 1, courtY: 1 },
+  { id: "net-left", label: "Filet gauche", courtX: 0, courtY: 0.5 },
+  { id: "net-right", label: "Filet droit", courtX: 1, courtY: 0.5 },
+  { id: "service-left", label: "Service gauche", courtX: 0.25, courtY: 0.85 },
+  { id: "service-right", label: "Service droit", courtX: 0.75, courtY: 0.85 },
+  { id: "center-net", label: "Centre filet", courtX: 0.5, courtY: 0.5 },
+  { id: "center-back", label: "Centre fond", courtX: 0.5, courtY: 1 }
 ];
 const defaultVideoAspectRatio = 16 / 9;
 
@@ -35,6 +48,7 @@ export default function CalibrationScreen() {
     useState<BackendCalibrationSuggestion | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [selectedReferenceId, setSelectedReferenceId] = useState(calibrationReferences[0].id);
 
   if (!match) {
     return (
@@ -46,14 +60,25 @@ export default function CalibrationScreen() {
 
   const currentMatch = match;
   const points = currentMatch.calibrationPoints ?? [];
+  const selectedReference =
+    calibrationReferences.find((reference) => reference.id === selectedReferenceId) ??
+    calibrationReferences[0];
 
   function handleAddPoint(point: CalibrationPoint) {
-    if (points.length >= 4) {
+    const hasExistingPoint = points.some((currentPoint) => currentPoint.id === point.id);
+
+    if (!hasExistingPoint && points.length >= maximumCalibrationPoints) {
+      setError("Tu as deja 4 reperes. Selectionne un repere pose pour le repositionner.");
       return;
     }
 
     setError(null);
-    setCalibrationPoints(currentMatch.id, [...points, point]);
+    setCalibrationPoints(
+      currentMatch.id,
+      hasExistingPoint
+        ? points.map((currentPoint) => (currentPoint.id === point.id ? point : currentPoint))
+        : [...points, point]
+    );
   }
 
   function handleReset() {
@@ -73,11 +98,11 @@ export default function CalibrationScreen() {
       setIsSuggesting(true);
       const suggestion = await suggestCourtCalibration(currentMatch.video);
       setCalibrationSuggestion(suggestion);
-      setCalibrationPoints(
-        currentMatch.id,
-        suggestion.points.map((point, index) => ({
-          id: point.id || `calibration-${index + 1}`,
-          label: point.label || calibrationLabels[index],
+    setCalibrationPoints(
+      currentMatch.id,
+      suggestion.points.map((point, index) => ({
+          id: point.id || calibrationReferences[index].id,
+          label: point.label || calibrationReferences[index].label,
           x: point.x,
           y: point.y
         }))
@@ -90,8 +115,8 @@ export default function CalibrationScreen() {
   }
 
   function handleValidate() {
-    if (points.length < 4) {
-      setError("Place les quatre coins du terrain avant de valider.");
+    if (points.length < minimumCalibrationPoints) {
+      setError("Place au moins 4 reperes visibles du terrain avant de valider.");
       return;
     }
 
@@ -105,7 +130,7 @@ export default function CalibrationScreen() {
       <PageHeader
         eyebrow={currentMatch.title}
         title="Calibration du terrain"
-        description="Place les quatre coins pour convertir les mouvements en metres."
+        description="Place 4 reperes visibles connus pour convertir les mouvements en metres."
       />
 
       <YStack
@@ -120,22 +145,54 @@ export default function CalibrationScreen() {
       >
         <CalibrationSurface
           points={points}
+          selectedReference={selectedReference}
           videoUri={currentMatch.video?.uri}
           onAddPoint={handleAddPoint}
         />
         <YStack gap="$2">
-          <Text style={{ color: colors.ink, fontSize: 18, fontWeight: "900" }}>Points terrain</Text>
+          <Text style={{ color: colors.ink, fontSize: 18, fontWeight: "900" }}>
+            Reperes terrain
+          </Text>
+          <Text style={{ color: colors.inkMuted, fontSize: 14, lineHeight: 20 }}>
+            Choisis un repere visible, puis touche sa position dans la video. Tu peux
+            repositionner un repere deja pose.
+          </Text>
           {calibrationSuggestion ? (
             <Text style={{ color: colors.inkMuted, fontSize: 14, lineHeight: 20 }}>
               Suggestion {Math.round(calibrationSuggestion.confidence * 100)}% via{" "}
               {calibrationSuggestion.method}.
             </Text>
           ) : null}
-          {calibrationLabels.map((label, index) => (
-            <Text key={label} style={{ color: colors.inkMuted, fontSize: 15 }}>
-              {index + 1}. {label} {points[index] ? "ok" : ""}
-            </Text>
-          ))}
+          <XStack flexWrap="wrap" gap="$2">
+            {calibrationReferences.map((reference) => {
+              const isPlaced = points.some((point) => point.id === reference.id);
+              const isSelected = selectedReference.id === reference.id;
+
+              return (
+                <Pressable
+                  key={reference.id}
+                  onPress={() => setSelectedReferenceId(reference.id)}
+                  style={[
+                    styles.referenceChip,
+                    isSelected ? styles.referenceChipSelected : null,
+                    isPlaced ? styles.referenceChipPlaced : null
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.referenceChipText,
+                      isSelected ? styles.referenceChipTextSelected : null
+                    ]}
+                  >
+                    {reference.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </XStack>
+          <Text style={{ color: colors.inkMuted, fontSize: 14, fontWeight: "800" }}>
+            {points.length}/{minimumCalibrationPoints} reperes poses
+          </Text>
         </YStack>
       </YStack>
 
@@ -148,7 +205,7 @@ export default function CalibrationScreen() {
           variant="secondary"
           onPress={handleSuggestCalibration}
         >
-          {isSuggesting ? "Suggestion..." : "Suggerer les coins"}
+          {isSuggesting ? "Suggestion..." : "Suggerer les reperes"}
         </Button>
         <Button icon="checkmark-circle-outline" onPress={handleValidate}>
           Valider la calibration
@@ -173,25 +230,42 @@ export default function CalibrationScreen() {
 function CalibrationSurface({
   onAddPoint,
   points,
+  selectedReference,
   videoUri
 }: {
   onAddPoint: (point: CalibrationPoint) => void;
   points: CalibrationPoint[];
+  selectedReference: CalibrationReference;
   videoUri?: string;
 }) {
   if (videoUri) {
-    return <VideoCalibrationSurface onAddPoint={onAddPoint} points={points} uri={videoUri} />;
+    return (
+      <VideoCalibrationSurface
+        onAddPoint={onAddPoint}
+        points={points}
+        selectedReference={selectedReference}
+        uri={videoUri}
+      />
+    );
   }
 
-  return <StaticCalibrationSurface onAddPoint={onAddPoint} points={points} />;
+  return (
+    <StaticCalibrationSurface
+      onAddPoint={onAddPoint}
+      points={points}
+      selectedReference={selectedReference}
+    />
+  );
 }
 
 function StaticCalibrationSurface({
   onAddPoint,
-  points
+  points,
+  selectedReference
 }: {
   onAddPoint: (point: CalibrationPoint) => void;
   points: CalibrationPoint[];
+  selectedReference: CalibrationReference;
 }) {
   const [layout, setLayout] = useState({ width: 0, height: 0 });
 
@@ -201,16 +275,23 @@ function StaticCalibrationSurface({
   }
 
   function handlePress(event: GestureResponderEvent) {
-    if (!layout.width || !layout.height || points.length >= 4) {
+    const hasExistingPoint = points.some((point) => point.id === selectedReference.id);
+
+    if (
+      !layout.width ||
+      !layout.height ||
+      (!hasExistingPoint && points.length >= maximumCalibrationPoints)
+    ) {
       return;
     }
 
     const { locationX, locationY } = event.nativeEvent;
-    const index = points.length;
 
     onAddPoint({
-      id: `calibration-${index + 1}`,
-      label: calibrationLabels[index],
+      id: selectedReference.id,
+      label: selectedReference.label,
+      courtX: selectedReference.courtX,
+      courtY: selectedReference.courtY,
       x: locationX / layout.width,
       y: locationY / layout.height
     });
@@ -244,10 +325,12 @@ function StaticCalibrationSurface({
 function VideoCalibrationSurface({
   onAddPoint,
   points,
+  selectedReference,
   uri
 }: {
   onAddPoint: (point: CalibrationPoint) => void;
   points: CalibrationPoint[];
+  selectedReference: CalibrationReference;
   uri: string;
 }) {
   const player = useCalibrationVideoPlayer(uri);
@@ -287,16 +370,23 @@ function VideoCalibrationSurface({
   }
 
   function handlePress(event: GestureResponderEvent) {
-    if (!layout.width || !layout.height || points.length >= 4) {
+    const hasExistingPoint = points.some((point) => point.id === selectedReference.id);
+
+    if (
+      !layout.width ||
+      !layout.height ||
+      (!hasExistingPoint && points.length >= maximumCalibrationPoints)
+    ) {
       return;
     }
 
     const { locationX, locationY } = event.nativeEvent;
-    const index = points.length;
 
     onAddPoint({
-      id: `calibration-${index + 1}`,
-      label: calibrationLabels[index],
+      id: selectedReference.id,
+      label: selectedReference.label,
+      courtX: selectedReference.courtX,
+      courtY: selectedReference.courtY,
       x: locationX / layout.width,
       y: locationY / layout.height
     });
@@ -510,6 +600,30 @@ const styles = StyleSheet.create({
   markerLabel: {
     color: colors.ink,
     fontWeight: "900"
+  },
+  referenceChip: {
+    minHeight: 38,
+    borderRadius: 8,
+    borderColor: colors.line,
+    borderWidth: 1,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    backgroundColor: colors.background
+  },
+  referenceChipPlaced: {
+    borderColor: colors.court
+  },
+  referenceChipSelected: {
+    backgroundColor: colors.court,
+    borderColor: colors.court
+  },
+  referenceChipText: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: "800"
+  },
+  referenceChipTextSelected: {
+    color: colors.surface
   },
   progressFill: {
     position: "absolute",

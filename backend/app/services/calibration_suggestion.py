@@ -6,10 +6,10 @@ import numpy as np
 from app.models.analysis import CalibrationPointInput, CalibrationSuggestion, StoredVideo
 
 COURT_LABELS = [
-    "Coin arriere gauche",
-    "Coin arriere droit",
-    "Coin avant droit",
-    "Coin avant gauche",
+    ("back-left", "Fond gauche"),
+    ("back-right", "Fond droit"),
+    ("net-right", "Filet droit"),
+    ("net-left", "Filet gauche"),
 ]
 
 
@@ -87,8 +87,8 @@ class CalibrationSuggestionService:
 
         return [
             CalibrationPointInput(
-                id=f"calibration-{index + 1}",
-                label=COURT_LABELS[index],
+                id=COURT_LABELS[index][0],
+                label=COURT_LABELS[index][1],
                 x=float(np.clip(point[0] / width, 0, 1)),
                 y=float(np.clip(point[1] / height, 0, 1)),
             )
@@ -112,8 +112,8 @@ class CalibrationSuggestionService:
 
         return [
             CalibrationPointInput(
-                id=f"calibration-{index + 1}",
-                label=COURT_LABELS[index],
+                id=COURT_LABELS[index][0],
+                label=COURT_LABELS[index][1],
                 x=x,
                 y=y,
             )

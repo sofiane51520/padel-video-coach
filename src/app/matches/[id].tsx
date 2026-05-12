@@ -90,7 +90,7 @@ export default function MatchDetailScreen() {
           },
           {
             title: "Terrain calibre",
-            description: "Les coins servent a transformer les positions en metres.",
+            description: "Les reperes servent a transformer les positions en metres.",
             done: calibrationDone
           },
           {

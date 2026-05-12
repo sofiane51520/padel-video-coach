@@ -42,6 +42,8 @@ export type VideoProbe = {
 export type CalibrationPoint = {
   id: string;
   label: string;
+  courtX?: number;
+  courtY?: number;
   x: number;
   y: number;
 };

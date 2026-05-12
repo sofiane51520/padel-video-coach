@@ -94,7 +94,7 @@ export default function MatchesScreen() {
           },
           {
             title: "Calibrer",
-            description: "Cliquer les quatre coins du terrain pour convertir les pixels en metres.",
+            description: "Cliquer quatre reperes visibles du terrain pour convertir les pixels en metres.",
             done: true
           },
           {

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 
 class AnalysisStatus(StrEnum):
@@ -23,6 +23,18 @@ class StoredVideo(BaseModel):
 class CalibrationPointInput(BaseModel):
     id: str
     label: str
+    court_x: float | None = Field(
+        default=None,
+        ge=0,
+        le=1,
+        validation_alias=AliasChoices("court_x", "courtX"),
+    )
+    court_y: float | None = Field(
+        default=None,
+        ge=0,
+        le=1,
+        validation_alias=AliasChoices("court_y", "courtY"),
+    )
     x: float = Field(ge=0, le=1)
     y: float = Field(ge=0, le=1)
 
