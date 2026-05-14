@@ -7,6 +7,12 @@ settings:
 importers:
 
   .:
+    devDependencies:
+      '@types/react':
+        specifier: ~19.2.0
+        version: 19.2.14
+
+  frontend:
     dependencies:
       '@expo/vector-icons':
         specifier: ^15.0.3

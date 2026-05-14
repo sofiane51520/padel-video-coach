@@ -36,6 +36,7 @@ Squelette Expo pour une application cross-platform web, iOS et Android qui analy
 Installe les dependances puis lance Expo :
 
 ```bash
+cd frontend
 corepack pnpm install
 corepack pnpm web
 ```
@@ -43,8 +44,15 @@ corepack pnpm web
 Tu peux aussi lancer l'app mobile avec :
 
 ```bash
+cd frontend
 corepack pnpm android
 corepack pnpm ios
+```
+
+Depuis la racine du repo, les scripts deleguent aussi vers `frontend` :
+
+```bash
+corepack pnpm web
 ```
 
 Note locale : sur cette machine, `node` est disponible mais `npm` pointe actuellement vers une installation utilisateur incomplete. Utilise `corepack pnpm`.
@@ -81,23 +89,24 @@ Le moteur d'analyse est volontairement simule pour l'instant. La prochaine etape
 ## Structure
 
 ```text
-src/app
-  _layout.tsx
-  (tabs)
-    index.tsx
-    upload.tsx
-    review.tsx
-    report.tsx
-  analysis/[id].tsx
-  matches/[id].tsx
-  players/[id].tsx
-
-src/components
-src/constants
-src/data
-src/store
-src/types
-src/utils
+frontend
+  src/app
+    _layout.tsx
+    (tabs)
+      index.tsx
+      upload.tsx
+      review.tsx
+      report.tsx
+    analysis/[id].tsx
+    matches/[id].tsx
+    players/[id].tsx
+    rallies/[id].tsx
+  src/components
+  src/constants
+  src/data
+  src/store
+  src/types
+  src/utils
 
 backend/app
   api
