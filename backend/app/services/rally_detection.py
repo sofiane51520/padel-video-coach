@@ -21,6 +21,7 @@ class DetectionStats:
     ball_count: int
     max_player_confidence: float
     max_ball_confidence: float
+    ball_center: tuple[float, float] | None = None
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,7 @@ class RallyDetectionService:
     min_rally_seconds = 2.0
     max_inactive_gap_seconds = 1.5
     edge_padding_seconds = 0.8
+    min_active_ball_movement = 0.01
     yolo_classes = (0, 32)
 
     def __init__(
@@ -96,6 +98,7 @@ class RallyDetectionService:
 
         frame_step = max(1, round(video_probe.fps / self.sample_rate_fps))
         previous_frame: np.ndarray | None = None
+        previous_ball_center: tuple[float, float] | None = None
         samples: list[ActivitySample] = []
         detected_objects = 0
 
@@ -115,14 +118,20 @@ class RallyDetectionService:
                     0 if previous_frame is None else self._motion_score(previous_frame, prepared_frame)
                 )
                 stats = self._detect_objects(model, frame)
+                ball_movement = self._ball_movement(
+                    previous_ball_center,
+                    stats.ball_center,
+                    frame,
+                )
                 detected_objects += stats.player_count + stats.ball_count
                 samples.append(
                     ActivitySample(
                         timestamp_seconds=timestamp_seconds,
-                        score=self._ai_activity_score(motion_score, stats),
+                        score=self._ai_activity_score(motion_score, stats, ball_movement),
                     )
                 )
                 previous_frame = prepared_frame
+                previous_ball_center = stats.ball_center or previous_ball_center
                 frame_index += frame_step
         finally:
             capture.release()
@@ -226,6 +235,7 @@ class RallyDetectionService:
                 ball_count=0,
                 max_player_confidence=0,
                 max_ball_confidence=0,
+                ball_center=None,
             )
 
         boxes = getattr(results[0], "boxes", None)
@@ -236,31 +246,80 @@ class RallyDetectionService:
                 ball_count=0,
                 max_player_confidence=0,
                 max_ball_confidence=0,
+                ball_center=None,
             )
 
         classes = boxes.cls.cpu().numpy().astype(int)
         confidences = boxes.conf.cpu().numpy()
         player_confidences = confidences[classes == 0]
         ball_confidences = confidences[classes == 32]
+        ball_center = self._most_confident_ball_center(boxes, classes, ball_confidences)
 
         return DetectionStats(
             player_count=int(player_confidences.size),
             ball_count=int(ball_confidences.size),
             max_player_confidence=self._max_confidence(player_confidences),
             max_ball_confidence=self._max_confidence(ball_confidences),
+            ball_center=ball_center,
         )
 
-    def _ai_activity_score(self, motion_score: float, stats: DetectionStats) -> float:
+    def _most_confident_ball_center(
+        self,
+        boxes: Any,
+        classes: np.ndarray,
+        ball_confidences: np.ndarray,
+    ) -> tuple[float, float] | None:
+        if ball_confidences.size == 0 or getattr(boxes, "xyxy", None) is None:
+            return None
+
+        ball_boxes = boxes.xyxy.cpu().numpy()[classes == 32]
+        best_index = int(np.argmax(ball_confidences))
+        x1, y1, x2, y2 = ball_boxes[best_index]
+
+        return ((float(x1) + float(x2)) / 2, (float(y1) + float(y2)) / 2)
+
+    def _ball_movement(
+        self,
+        previous_ball_center: tuple[float, float] | None,
+        current_ball_center: tuple[float, float] | None,
+        frame: np.ndarray,
+    ) -> float | None:
+        if previous_ball_center is None or current_ball_center is None:
+            return None
+
+        dx = current_ball_center[0] - previous_ball_center[0]
+        dy = current_ball_center[1] - previous_ball_center[1]
+        frame_height, frame_width = frame.shape[:2]
+        diagonal = max(1.0, float((frame_width**2 + frame_height**2) ** 0.5))
+
+        return float((dx**2 + dy**2) ** 0.5 / diagonal)
+
+    def _ai_activity_score(
+        self,
+        motion_score: float,
+        stats: DetectionStats,
+        ball_movement: float | None,
+    ) -> float:
         if stats.ball_count > 0:
-            return motion_score * 2 + stats.max_ball_confidence * 0.05
+            if ball_movement is not None:
+                if ball_movement < self.min_active_ball_movement:
+                    return motion_score * 0.25
+
+                return (
+                    motion_score * 2
+                    + min(ball_movement * 10, 0.25)
+                    + stats.max_ball_confidence * 0.02
+                )
+
+            return motion_score * 1.1
 
         if stats.player_count >= 2:
-            return motion_score * 1.4 + stats.max_player_confidence * 0.004
+            return motion_score * 1.2 + stats.max_player_confidence * 0.004
 
         if stats.player_count == 1:
-            return motion_score
+            return motion_score * 0.8
 
-        return motion_score * 0.35
+        return motion_score * 0.25
 
     def _max_confidence(self, confidences: np.ndarray) -> float:
         if confidences.size == 0:

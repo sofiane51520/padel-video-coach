@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.models.analysis import StoredVideo
-from app.services.rally_detection import RallyDetectionService
+from app.services.rally_detection import DetectionStats, RallyDetectionService
 from app.services.video_probe import video_probe_service
 
 
@@ -73,6 +73,24 @@ def test_detects_rallies_from_video_activity(tmp_path: Path) -> None:
     assert rallies[0].end_time == "00:04"
     assert rallies[1].start_time == "00:04"
     assert rallies[1].end_time == "00:08"
+
+
+def test_ball_position_movement_drives_ai_activity_score() -> None:
+    detector = RallyDetectionService(model_enabled=False)
+    stats = DetectionStats(
+        player_count=0,
+        ball_count=1,
+        max_player_confidence=0,
+        max_ball_confidence=0.9,
+        ball_center=(120, 80),
+    )
+
+    stationary_score = detector._ai_activity_score(0.08, stats, ball_movement=0.002)
+    unknown_score = detector._ai_activity_score(0.08, stats, ball_movement=None)
+    moving_score = detector._ai_activity_score(0.08, stats, ball_movement=0.05)
+
+    assert stationary_score < unknown_score
+    assert moving_score > unknown_score
 
 
 def create_sample_video(tmp_path: Path) -> Path:
