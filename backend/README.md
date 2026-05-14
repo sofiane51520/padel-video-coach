@@ -40,3 +40,19 @@ GET  /api/analyses/{analysis_id}/result
 Le traitement est simule pour le moment. La prochaine etape sera d'affiner le pipeline OpenCV/YOLO avec un modele specialise padel/tennis.
 Le backend lit deja la video avec OpenCV pour extraire les metadonnees et une frame par seconde dans `.data/frames`.
 Les echanges proposes sont detectes avec YOLO (`person` et `sports ball`) combine a l'activite observee dans la video. Si le modele n'est pas disponible, le backend retombe sur le detecteur OpenCV.
+
+## Acceleration GPU NVIDIA
+
+Par defaut, `YOLO_DEVICE=auto` utilise `cuda:0` si PyTorch detecte CUDA, sinon `cpu`.
+
+Sur une machine NVIDIA, installer la build CUDA de PyTorch dans le venv backend :
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install --upgrade torch torchvision --index-url https://download.pytorch.org/whl/cu128
+```
+
+Verification :
+
+```powershell
+.\.venv\Scripts\python.exe -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0))"
+```

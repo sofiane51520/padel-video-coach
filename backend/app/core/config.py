@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     yolo_model_name: str = "yolo11n.pt"
     yolo_model_path: Path = Path(".data/models/yolo11n.pt")
     yolo_confidence: float = 0.25
+    yolo_device: str = "auto"
+    yolo_half_precision: bool = True
 
     @field_validator("cors_origins", mode="before")
     @classmethod

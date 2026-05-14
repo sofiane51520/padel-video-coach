@@ -42,13 +42,18 @@ class RallyDetectionService:
         model_path: Path = settings.yolo_model_path,
         model_name: str = settings.yolo_model_name,
         model_confidence: float = settings.yolo_confidence,
+        model_device: str = settings.yolo_device,
+        half_precision: bool = settings.yolo_half_precision,
     ) -> None:
         self.model_enabled = model_enabled
         self.model_path = model_path
         self.model_name = model_name
         self.model_confidence = model_confidence
+        self.model_device = model_device
+        self.half_precision = half_precision
         self._model: Any | None = None
         self._model_load_failed = False
+        self._resolved_device: str | None = None
 
     def detect(self, stored_video: StoredVideo, video_probe: VideoProbe) -> list[RallySuggestion]:
         samples = self._sample_model_activity(stored_video.path, video_probe)
@@ -178,17 +183,40 @@ class RallyDetectionService:
                 self._model = YOLO(str(self.model_path))
             else:
                 self._model = YOLO(self.model_name)
+
+            self._resolved_device = self._resolve_device()
+            self._model.to(self._resolved_device)
         except Exception:
             self._model_load_failed = True
             return None
 
         return self._model
 
+    def _resolve_device(self) -> str:
+        requested_device = self.model_device.strip().lower()
+
+        if requested_device and requested_device != "auto":
+            return requested_device
+
+        try:
+            import torch
+
+            if torch.cuda.is_available():
+                return "cuda:0"
+        except Exception:
+            return "cpu"
+
+        return "cpu"
+
     def _detect_objects(self, model: Any, frame: np.ndarray) -> DetectionStats:
+        device = self._resolved_device or self._resolve_device()
+        use_half_precision = self.half_precision and device.startswith("cuda")
         results = model.predict(
             frame,
             classes=list(self.yolo_classes),
             conf=self.model_confidence,
+            device=device,
+            half=use_half_precision,
             verbose=False,
         )
 
